@@ -1,0 +1,49 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "xunji-mcp",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "PUBLIC_ORIGIN": "https://exercise.example.com",
+    "MCP_RESOURCE_PATH": "/mcp",
+    "ALLOWED_USER_EMAILS": "",
+    "ENABLED_DATA_DOMAINS": "train",
+    "WRITE_TOOLS_ENABLED": "false",
+    "UPSTREAM_TIMEOUT_MS": "15000"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "REPLACE_WITH_OAUTH_KV_ID"
+    },
+    {
+      "binding": "CACHE_KV",
+      "id": "REPLACE_WITH_CACHE_KV_ID"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "UPSTREAM_GATE",
+        "class_name": "UpstreamGate"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["UpstreamGate"]
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "exercise.example.com",
+      "custom_domain": true
+    }
+  ]
+}

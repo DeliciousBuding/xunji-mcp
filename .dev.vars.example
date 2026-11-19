@@ -1,0 +1,5 @@
+# Copy to .dev.vars for local development. Never commit the real values.
+XUNJI_API_KEY=replace-with-your-xunji-open-api-key
+OWNER_PASSPHRASE=replace-with-a-long-random-deployment-passphrase
+# ACCESS_TEAM_DOMAIN=your-team.cloudflareaccess.com
+# ACCESS_AUD=your-access-application-aud-tag

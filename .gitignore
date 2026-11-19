@@ -1,0 +1,15 @@
+# Private deployment values for this deployment. Never commit.
+*.local
+.env
+.env.*
+.dev.vars
+wrangler.jsonc
+.local/
+.wrangler/
+node_modules/
+dist/
+coverage/
+.local/
+*.log
+worker-configuration.d.ts
+

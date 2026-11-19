@@ -48,7 +48,7 @@ function cookieFrom(response: Response): string {
     .join('; ');
 }
 
-async function completeAuthFlow(): Promise<{ accessToken: string; refreshToken?: string }> {
+async function completeAuthFlow(): Promise<{ accessToken: string; refreshToken?: string; clientId: string }> {
   const client = await registerClient();
   const verifier = 'verifier-'.padEnd(64, 'x');
   const challenge = await sha256Base64Url(verifier);
@@ -109,7 +109,7 @@ async function completeAuthFlow(): Promise<{ accessToken: string; refreshToken?:
   expect(tokenResponse.status).toBe(200);
   const token = (await tokenResponse.json()) as { access_token: string; refresh_token?: string };
   expect(token.access_token).toBeTruthy();
-  return { accessToken: token.access_token, refreshToken: token.refresh_token };
+  return { accessToken: token.access_token, refreshToken: token.refresh_token, clientId: client.client_id };
 }
 
 async function mcpCall(token: string, body: Record<string, unknown>): Promise<Response> {
@@ -239,6 +239,81 @@ describe('authorization page', () => {
     const response = await SELF.fetch(url.toString(), { redirect: 'manual' });
     expect(response.status).toBe(400);
     expect(response.headers.get('location')).toBeNull();
+  });
+});
+
+describe('token lifecycle', () => {
+  it('rotates refresh tokens and accepts the new access token', async () => {
+    const { accessToken, refreshToken, clientId } = await completeAuthFlow();
+    expect(refreshToken).toBeTruthy();
+
+    const refreshed = await SELF.fetch(`${ORIGIN}/oauth/token`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken!,
+        client_id: clientId,
+        resource: MCP_URL,
+      }),
+    });
+    expect(refreshed.status).toBe(200);
+    const body = (await refreshed.json()) as { access_token: string; refresh_token?: string };
+    expect(body.access_token).toBeTruthy();
+    expect(body.access_token).not.toBe(accessToken);
+    expect(body.refresh_token).toBeTruthy();
+    expect(body.refresh_token).not.toBe(refreshToken);
+  });
+
+  it('rejects a token request with the wrong PKCE verifier', async () => {
+    const client = await registerClient();
+    const verifier = 'verifier-'.padEnd(64, 'x');
+    const challenge = await sha256Base64Url(verifier);
+    const authorizeUrl = new URL(`${ORIGIN}/authorize`);
+    for (const [key, value] of Object.entries({
+      response_type: 'code',
+      client_id: client.client_id,
+      redirect_uri: REDIRECT,
+      scope: 'xunji:read',
+      state: 's',
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+      resource: MCP_URL,
+    })) {
+      authorizeUrl.searchParams.set(key, value);
+    }
+    const page = await SELF.fetch(authorizeUrl.toString(), { redirect: 'manual' });
+    const html = await page.text();
+    const handle = /name="handle" value="([^"]+)"/.exec(html)![1]!;
+    const cookie = cookieFrom(page);
+    const form = new FormData();
+    form.set('handle', handle);
+    form.set('decision', 'approve');
+    form.set('scope', 'xunji:read');
+    form.set('passphrase', PASSPHRASE);
+    const approved = await SELF.fetch(`${ORIGIN}/authorize`, {
+      method: 'POST',
+      headers: { cookie },
+      body: form,
+      redirect: 'manual',
+    });
+    const code = new URL(approved.headers.get('location')!).searchParams.get('code')!;
+
+    const response = await SELF.fetch(`${ORIGIN}/oauth/token`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: REDIRECT,
+        client_id: client.client_id,
+        code_verifier: 'wrong-verifier'.padEnd(64, 'y'),
+        resource: MCP_URL,
+      }),
+    });
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error?: string };
+    expect(body.error).toContain('invalid_grant');
   });
 });
 

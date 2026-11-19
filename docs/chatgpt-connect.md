@@ -68,6 +68,7 @@ Confirm the returned title/volume match the Xunji app. Then try
 | 401 after connecting                                             | Token audience does not equal `PUBLIC_ORIGIN + /mcp`; check `PUBLIC_ORIGIN`                       |
 | `deferred` results                                               | The vendor is pacing reads; wait `retryAfterSeconds` and retry                                    |
 | Writes unavailable                                               | Expected: `WRITE_TOOLS_ENABLED=false` by default                                                  |
+| New tools missing after a bridge upgrade                         | The connector snapshots its tool list at creation; remove and re-add it, then approve OAuth again |
 
 ## Revoking access
 

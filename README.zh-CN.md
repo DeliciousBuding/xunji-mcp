@@ -26,7 +26,7 @@
 | `xunji_search_movements`                                                       | 标准中文动作名                                                         |
 | `xunji_list_plans` / `xunji_get_plan`                                          | 官方计划，只读                                                         |
 | `xunji_list_training_days` / `xunji_training_stats` / `xunji_movement_history` | 0.1 兼容的有限窗口工具                                                 |
-| `xunji_upsert_training_day`                                                    | 可选写入，**默认关闭**                                                 |
+| `xunji_upsert_training_day`                                                    | 可选写入，仅 **`WRITE_TOOLS_ENABLED=true`** 时注册                     |
 
 查询结果使用列式 `columns`/`rows`、明确单位与指标口径、覆盖与新鲜度，并在文本字段只放简短摘要，不在 content 与 structuredContent 里重复大 JSON。空日与未扫描日是两种不同状态。
 

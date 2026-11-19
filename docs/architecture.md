@@ -64,27 +64,30 @@ history start, and starts a Durable Object alarm. Each alarm drains up to nine
 due days at concurrency three, respecting the per-day gate. Success replaces the
 day transactionally (source edits and deletions included); rate limits and
 failures get a persisted `next_attempt_at`. Pause/resume are durable. The scan
-does not run inside a tool call and does not require the client to loop.
+does not run inside a tool call and does not require the client to loop. Scans
+write D1 only: the read path opts out of the KV cache, so a multi-year backfill
+cannot consume the account-wide KV write quota. Work is capped at 100 days per
+UTC day and resumes at the next UTC midnight.
 
 ## Compatibility matrix
 
-| Surface                                | Supported                                      | Notes                                                                                                        |
-| -------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| MCP Streamable HTTP                    | Yes                                            | Stateless, JSON responses, `POST /mcp` only                                                                  |
-| MCP SSE (old transport)                | No                                             | Not implemented                                                                                              |
-| OAuth 2.1 auth code + PKCE             | Yes                                            | S256 required for public clients                                                                             |
-| Client ID Metadata Documents           | Yes                                            | Preferred; provider validates and caches                                                                     |
-| Dynamic Client Registration            | Yes                                            | Kept for older clients                                                                                       |
-| Pre-registered client                  | Via `OAuthHelpers.createClient()`              | Not exposed as an endpoint                                                                                   |
-| RFC 9728 protected resource metadata   | Yes                                            | Path-scoped document for `/mcp`                                                                              |
-| RFC 8414 authorization server metadata | Yes                                            | Includes revocation, S256, `iss`                                                                             |
-| RFC 9207 `iss`                         | Yes                                            | Present on success and error redirects                                                                       |
-| RFC 8707 `resource`                    | Yes                                            | Validated on authorize and token                                                                             |
-| Refresh token rotation                 | Yes                                            | `refreshTokenIdleTTL` 30 days                                                                                |
-| Token revocation                       | Yes                                            | `/oauth/token` revocation per RFC 7009                                                                       |
-| `offline_access`                       | Yes                                            | Granted with consent                                                                                         |
-| ChatGPT connectors                     | Implemented against the current OAuth contract | Live connection status is reported separately; do not assume until the operator's own connection is verified |
-| Claude / Cursor / other MCP clients    | Should work via CIMD or DCR                    | Not individually verified                                                                                    |
+| Surface                                | Supported                                      | Notes                                                                                         |
+| -------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| MCP Streamable HTTP                    | Yes                                            | Stateless, JSON responses, `POST /mcp` only                                                   |
+| MCP SSE (old transport)                | No                                             | Not implemented                                                                               |
+| OAuth 2.1 auth code + PKCE             | Yes                                            | S256 required for public clients                                                              |
+| Client ID Metadata Documents           | Yes                                            | Preferred; provider validates and caches                                                      |
+| Dynamic Client Registration            | Yes                                            | Kept for older clients                                                                        |
+| Pre-registered client                  | Via `OAuthHelpers.createClient()`              | Not exposed as an endpoint                                                                    |
+| RFC 9728 protected resource metadata   | Yes                                            | Path-scoped document for `/mcp`                                                               |
+| RFC 8414 authorization server metadata | Yes                                            | Includes revocation, S256, `iss`                                                              |
+| RFC 9207 `iss`                         | Yes                                            | Present on success and error redirects                                                        |
+| RFC 8707 `resource`                    | Yes                                            | Validated on authorize and token                                                              |
+| Refresh token rotation                 | Yes                                            | `refreshTokenIdleTTL` 30 days                                                                 |
+| Token revocation                       | Yes                                            | `/oauth/token` revocation per RFC 7009                                                        |
+| `offline_access`                       | Yes                                            | Granted with consent                                                                          |
+| ChatGPT connectors                     | Implemented against the current OAuth contract | Verified 2026-11-19 with a real read-only query; each deployment repeats the connection check |
+| Claude / Cursor / other MCP clients    | Should work via CIMD or DCR                    | Not individually verified                                                                     |
 
 ## Tool surface (v0.2)
 

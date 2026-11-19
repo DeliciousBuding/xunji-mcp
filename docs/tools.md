@@ -1,8 +1,9 @@
 # Tools
 
-Dates are `YYYY-MM-DD` calendar days exactly as Xunji stores them; the bridge
-does not reinterpret time zones. Failures set `isError: true` and a stable
-`error.code`.
+Dates are `YYYY-MM-DD` calendar days exactly as Xunji stores them. When a tool
+needs "today" (default ranges, cache TTLs, scan cut-off), it uses the vendor's
+`Asia/Shanghai` calendar day, not the Worker's UTC day. Failures set
+`isError: true` and a stable `error.code`.
 
 The 0.2 query tools return the data in `structuredContent` and a short human
 summary in `content[0].text` — they do not duplicate a large JSON payload in

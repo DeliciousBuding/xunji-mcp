@@ -6,13 +6,14 @@ at an HTTPS origin so that a hosted MCP client can reach it.
 
 ## Assets
 
-| Asset                         | Where it lives                                       | Impact if disclosed                                       |
-| ----------------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
-| Xunji API key                 | Worker secret (`XUNJI_API_KEY`)                      | Full read/write access to the operator's training history |
-| Training history              | Xunji servers; normalized copies in the bridge cache | Health and habit inference about one person               |
-| OAuth grants / refresh tokens | Provider KV (`OAUTH_KV`)                             | Access to this bridge until revoked                       |
-| Operator identity             | Access JWT / passphrase, token props                 | Impersonation of the operator at the consent step         |
-| Deployment configuration      | gitignored `wrangler.jsonc`, secrets                 | Availability, wrong-origin OAuth metadata                 |
+| Asset                         | Where it lives                                                | Impact if disclosed                                       |
+| ----------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- |
+| Xunji API key                 | Worker secret (`XUNJI_API_KEY`)                               | Full read/write access to the operator's training history |
+| Training history              | Xunji servers; normalized copies in D1 and a hot-key KV cache | Health and habit inference about one person               |
+| OAuth grants / refresh tokens | Provider KV (`OAUTH_KV`)                                      | Access to this bridge until revoked                       |
+| Operator identity             | Access JWT / passphrase, token props                          | Impersonation of the operator at the consent step         |
+| Deployment configuration      | gitignored `wrangler.jsonc`, secrets                          | Availability, wrong-origin OAuth metadata                 |
+| Operator console              | `/admin/*` behind `ADMIN_TOKEN`                               | Index/backfill control, aggregate counts                  |
 
 ## Trust boundaries
 
@@ -36,13 +37,15 @@ at an HTTPS origin so that a hosted MCP client can reach it.
 | T4  | CSRF on consent                                                                      | `beginConsent()` issues a browser-bound, single-use handle; POST without the binding cookie is rejected. Error pages are never redirects unless the client and redirect URI were validated. |
 | T5  | Consent-page XSS via client metadata                                                 | All client-supplied strings are HTML-escaped; CSP `default-src 'none'`, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, no client JS.                                                    |
 | T6  | SSRF via CIMD `client_id` URL                                                        | Provider fetches CIMD with `global_fetch_strictly_public`, HTTPS-only, size and time bounds.                                                                                                |
-| T7  | Cross-user cache leakage                                                             | Cache keys include a SHA-256 subject prefix derived from the verified identity; no endpoint accepts a user identifier.                                                                      |
+| T7  | Cross-user leakage                                                                   | KV keys include a SHA-256 subject prefix derived from the verified identity; D1 is explicitly single-tenant (one deployment per Xunji account); no endpoint accepts a user identifier.      |
 | T8  | Accidental destructive write                                                         | Write tools absent unless `WRITE_TOOLS_ENABLED=true` **and** the token has `xunji:write`; `confirmed: true` required; ±6 months window; no delete; no `dry_run` illusion.                   |
-| T9  | Vendor rate-limit burn / self-DoS                                                    | Per-day Durable Object reservation, bounded waits, cooldown memory, two-read budget per range call, cache-first reads.                                                                      |
+| T9  | Vendor rate-limit burn / self-DoS                                                    | Per-day Durable Object reservation, bounded waits, cooldown memory, two-read budget per range call, cache-first reads, 100-day/day scan budget, resumable backfill.                         |
 | T10 | Key leakage through logs/errors                                                      | No request bodies, headers or upstream payloads are logged. Error mapping replaces vendor text with typed codes. Health output reports booleans only.                                       |
 | T11 | Prompt injection from training notes                                                 | Notes are opt-in, returned as data fields, and tool descriptions state they are untrusted content. No tool executes text.                                                                   |
-| T12 | Resource exhaustion                                                                  | 32 KiB MCP body cap, 2 MiB upstream body cap, 15s upstream timeout, bounded range/history windows, single-tenant shape.                                                                     |
+| T12 | Resource exhaustion                                                                  | 32 KiB MCP body cap, 2 MiB upstream body cap, 15s upstream timeout, bounded range/history windows, single-tenant shape, 300/day KV write budget.                                            |
 | T13 | Token replay after revoke                                                            | Provider revokes all tokens for a client on `deleteClient`; access tokens expire within 1h; refresh idle expiry 30d.                                                                        |
+| T14 | Admin endpoint abuse or token leak                                                   | `ADMIN_TOKEN` is a Worker secret compared in constant time; `/admin/*` returns counts and control only, never training payloads; unauthenticated requests get 401.                          |
+| T15 | Account-wide KV quota starvation                                                     | Scans never write KV; KV writes are capped at 300/day through a D1 counter and skip to degraded mode; account exhaustion is treated as a first-class failure, not a per-Worker concern.     |
 
 ## Out of scope
 
@@ -57,7 +60,9 @@ at an HTTPS origin so that a hosted MCP client can reach it.
 - Passphrase mode can be phished or reused; Access mode is recommended.
 - A host compromise exposes the Worker secret. Rotate the Xunji key from the
   Xunji app if that is suspected.
-- Cached normalized data lives in Cloudflare KV for up to 12 hours; treat the
-  account as part of the trust boundary.
+- The D1 index holds a derived copy of the operator's full history until the
+  operator clears it; it is single-tenant and must be treated as sensitive.
+  KV only holds today/yesterday hot entries (minutes), the movement catalog, and
+  OAuth grants; treat the Cloudflare account as part of the trust boundary.
 - The vendor has no delete API, so a mistaken write must be corrected in the
   Xunji app or overwritten by a later upsert.

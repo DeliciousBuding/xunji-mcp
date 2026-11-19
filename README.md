@@ -26,7 +26,7 @@ The 0.2 layer answers analysis tasks in one call instead of wrapping endpoints:
 | `xunji_search_movements`                                                       | Canonical Chinese movement names                                           |
 | `xunji_list_plans` / `xunji_get_plan`                                          | Official plans, read-only                                                  |
 | `xunji_list_training_days` / `xunji_training_stats` / `xunji_movement_history` | Legacy bounded tools, kept for 0.1 clients                                 |
-| `xunji_upsert_training_day`                                                    | Opt-in write; **disabled by default**                                      |
+| `xunji_upsert_training_day`                                                    | Opt-in write; not registered unless **`WRITE_TOOLS_ENABLED=true`**         |
 
 Query results use columnar `columns`/`rows`, explicit units and metric definitions, coverage/freshness, and a short text summary; they do not duplicate a large JSON payload in both MCP fields. An empty day and an unscanned day are different states.
 

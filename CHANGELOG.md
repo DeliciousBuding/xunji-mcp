@@ -30,6 +30,8 @@
   hardcoded v0.2.0 value.
 - The consent page explains persistent analytics-index storage alongside the
   OAuth state and read cache.
+- The lockfile includes non-breaking dependency patches from `npm audit fix`.
+  Remaining test-pool dependency alerts are recorded in acceptance.
 
 ## 0.3.0 — 2026-11-19
 

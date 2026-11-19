@@ -84,6 +84,13 @@ history cleanup.
 These checks do not re-run private account reads, verify body/nutrition, or
 establish ChatGPT MCP Apps rendering.
 
+Non-breaking audit fixes were applied and the 68-test suite rerun. The remaining
+development audit reports six high findings from the retired
+`@cloudflare/vitest-pool-workers` dependency chain (`miniflare`, its bundled
+Wrangler, `sharp`, `undici`, and Zod). The suggested forced fix downgrades the
+pool and changes compatibility; it was not applied. Moving to
+`@cloudflare/vitest-plugin` requires a separate test runtime migration.
+
 ## Definition of done for a release
 
 Apply this checklist to the scope of each release.

@@ -77,6 +77,12 @@ Key 轮换和 ChatGPT MCP Apps 渲染分别保留为操作者及客户端侧待�
 这些检查不代表重新读取私有账号、验证身体与饮食数据，
 或完成 ChatGPT MCP Apps 渲染。
 
+已应用兼容的 audit 修复，并重新通过 68 项测试。完整开发依赖审计剩余六项
+high 告警来自停止维护的 `@cloudflare/vitest-pool-workers` 依赖树
+（`miniflare`、内置 Wrangler、`sharp`、`undici` 和 Zod）。
+建议的强制修复会降级测试池并改变兼容性，因此没有执行。
+切换 `@cloudflare/vitest-plugin` 需要单独迁移测试环境。
+
 ## 一个 Release 的完成条件
 
 按每次版本的范围执行以下清单。

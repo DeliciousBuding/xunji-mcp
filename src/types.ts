@@ -53,6 +53,8 @@ export interface Env {
   KV_WRITE_DAILY_BUDGET?: string;
   /** Maximum history days scanned per UTC day. Defaults to 100. */
   SCAN_DAILY_LIMIT?: string;
+  /** Register the MCP Apps view for xunji_training_overview. Defaults to off. */
+  MCP_UI_ENABLED?: string;
 
   /** Cloudflare Access team domain, e.g. `team.cloudflareaccess.com`. */
   ACCESS_TEAM_DOMAIN?: string;

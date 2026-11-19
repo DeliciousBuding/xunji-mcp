@@ -166,6 +166,10 @@ curl https://your-domain.example/admin/index -H "Authorization: Bearer $ADMIN_TO
 The scanner processes at most `SCAN_DAILY_LIMIT` days per UTC day and continues
 on the next day's first alarm. It writes D1 only — no KV writes during scans.
 
+Set `MCP_UI_ENABLED=true` to expose the optional MCP Apps view described in
+[tools.md](tools.md). The default is off; it adds one HTML resource but no data
+access.
+
 The cron trigger (`10 16 * * *`, 00:10 Asia/Shanghai) keeps the tail current:
 it enqueues the gap between the latest complete/empty day and yesterday, then
 starts the same scanner. It is a no-op until `history_start` exists. Today is

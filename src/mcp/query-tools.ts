@@ -37,6 +37,7 @@ import { kvWritesToday } from '../kv-budget';
 import { BODY_TYPES, readBody, readFoodRecords, searchFoods } from '../upstream/domains';
 import type { AuthProps, Env } from '../types';
 import { SCOPES } from '../types';
+import { OVERVIEW_UI_HTML, OVERVIEW_UI_MIME, OVERVIEW_UI_URI } from './overview-ui';
 import { compactResult, failurePayload, jsonResult } from './result';
 
 export interface QueryToolContext {
@@ -101,6 +102,33 @@ export function registerQueryTools(server: McpServer, ctx: QueryToolContext): vo
     .includes('train');
   const hasIndex = Boolean(env.DB) && trainEnabled;
   const hasScanner = Boolean(env.DB && env.SCAN_COORDINATOR) && trainEnabled;
+  const uiEnabled = (env.MCP_UI_ENABLED ?? '').toLowerCase() === 'true';
+
+  if (hasIndex && uiEnabled) {
+    server.registerResource(
+      'xunji_training_overview_view',
+      OVERVIEW_UI_URI,
+      {
+        title: 'Training overview view',
+        description:
+          'Compact MCP Apps view for xunji_training_overview: KPIs and a monthly volume chart.',
+        mimeType: OVERVIEW_UI_MIME,
+      },
+      async (uri) => ({
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: OVERVIEW_UI_MIME,
+            text: OVERVIEW_UI_HTML,
+            _meta: {
+              ui: { csp: {}, prefersBorder: true },
+              'openai/widgetCSP': { connect_domains: [], resource_domains: [] },
+            },
+          },
+        ],
+      }),
+    );
+  }
 
   /* ---------------------------------------------------------------- */
   /* Capability matrix                                                */
@@ -242,6 +270,14 @@ export function registerQueryTools(server: McpServer, ctx: QueryToolContext): vo
           idempotentHint: true,
           openWorldHint: false,
         },
+        ...(uiEnabled
+          ? {
+              _meta: {
+                ui: { resourceUri: OVERVIEW_UI_URI, visibility: ['model', 'app'] },
+                'openai/outputTemplate': OVERVIEW_UI_URI,
+              },
+            }
+          : {}),
       },
       async (input) => {
         try {

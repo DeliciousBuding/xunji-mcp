@@ -18,6 +18,7 @@
     "UPSTREAM_TIMEOUT_MS": "15000",
     "KV_WRITE_DAILY_BUDGET": "300",
     "SCAN_DAILY_LIMIT": "100",
+    "MCP_UI_ENABLED": "false",
   },
   "kv_namespaces": [
     {

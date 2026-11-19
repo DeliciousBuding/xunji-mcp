@@ -45,6 +45,16 @@ KPIs for a range: sessions, training days, sets, volume, duration, recent
 4-week volume change, monthly series, top movements and coverage. One call
 replaces a year of per-day reads.
 
+## MCP Apps view (optional)
+
+With `MCP_UI_ENABLED=true`, the server also exposes the resource
+`ui://xunji/overview` (`text/html;profile=mcp-app`) and links it from
+`xunji_training_overview` via `_meta.ui.resourceUri` plus the ChatGPT Apps SDK
+`openai/outputTemplate`. The view renders the same `structuredContent` as KPI
+tiles and a monthly volume chart. It makes no network requests, adds no data
+access and has no storage; hosts that do not support MCP Apps keep using the
+text result. The resource is absent when the flag is off.
+
 ## `xunji_movement_progress`
 
 Up to eight movements: best weight set, best Epley estimate, PR timeline,

@@ -55,11 +55,20 @@ export async function handleAdmin(request: Request, env: Env): Promise<Response>
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
     try {
       const tools = await client.listTools();
+      const resources = await client
+        .listResources()
+        .then((result) => result.resources)
+        .catch(() => []);
       return json({
         count: tools.tools.length,
         tools: tools.tools.map((tool) => ({
           name: tool.name,
           annotations: tool.annotations ?? null,
+          uiResource: (tool._meta?.ui as { resourceUri?: string } | undefined)?.resourceUri ?? null,
+        })),
+        resources: resources.map((resource) => ({
+          uri: resource.uri,
+          mimeType: resource.mimeType ?? null,
         })),
       });
     } finally {

@@ -10,6 +10,8 @@ A small, self-hosted **Model Context Protocol** bridge for [Xunji (训记)](http
 It is deliberately **not** a fitness app, not a second source of truth, and not a multi-tenant service. Your Xunji key stays in the Worker; clients get an OAuth grant, never the key. Xunji remains authoritative; the index is disposable and rebuildable.
 
 - [简体中文](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Tools](docs/tools.md) · [Coverage matrix](docs/coverage.md) · [Benchmark](docs/benchmark.md) · [Deploy](docs/deployment.md) · [ChatGPT](docs/chatgpt-connect.md)
+- Optional `MCP_UI_ENABLED=true` adds one sandboxed MCP Apps view (KPI tiles + monthly volume) for the overview tool; text output stays the fallback.
+- Optional `MCP_UI_ENABLED=true` adds one sandboxed MCP Apps view (KPI tiles + monthly volume) for the overview tool; text output stays the fallback.
 
 ## What it gives an agent
 

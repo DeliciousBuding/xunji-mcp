@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 — 2026-11-19
+
+### Added
+
+- Optional MCP Apps view for `xunji_training_overview`
+  (`ui://xunji/overview`, `text/html;profile=mcp-app`): KPI tiles, a monthly
+  volume chart, coverage badge and host theme support. One self-contained HTML
+  document, no external requests, no extra data access; text output remains the
+  fallback.
+- The tool advertises `_meta.ui.resourceUri` and the ChatGPT Apps SDK
+  `openai/outputTemplate` when `MCP_UI_ENABLED=true`; the default is off.
+
 ## 0.2.1 — 2026-11-19
 
 ### Added

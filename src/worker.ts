@@ -29,7 +29,7 @@ import { enqueueDailyGap } from './index/daily-refresh';
 import type { AuthProps, Env } from './types';
 import { SCOPES } from './types';
 
-const SERVER_INFO = { name: 'xunji-mcp', version: '0.2.1' } as const;
+const SERVER_INFO = { name: 'xunji-mcp', version: '0.3.0' } as const;
 
 function writeEnabled(env: Env): boolean {
   return (env.WRITE_TOOLS_ENABLED ?? '').toLowerCase() === 'true';
@@ -247,6 +247,7 @@ export function handleHealth(env: Env): Response {
       allowlistEntries: (env.ALLOWED_USER_EMAILS ?? '').split(',').filter(Boolean).length,
       index: Boolean(env.DB),
       scanner: Boolean(env.SCAN_COORDINATOR),
+      mcpUi: (env.MCP_UI_ENABLED ?? '').toLowerCase() === 'true',
     },
     writeToolsEnabled: writeEnabled(env),
   };

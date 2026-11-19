@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.1 — 2026-11-19
+
+### Added
+
+- A daily cron (`10 16 * * *`, 00:10 Asia/Shanghai) enqueues only the gap
+  between the latest complete/empty day and yesterday, then starts the existing
+  scanner. The index tail stays current without client traffic; today is
+  indexed the next day.
+
+### Changed
+
+- `workers_dev` defaults to `false` in the example config, so the Access gate
+  cannot be bypassed through the account's `workers.dev` hostname.
+- The deployment, ChatGPT, threat-model and security docs describe the hardened
+  operator gate and how to re-authenticate after revoking a connector.
+
 ## 0.2.0 — 2026-11-19
 
 ### Added

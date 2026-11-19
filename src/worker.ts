@@ -29,7 +29,7 @@ import { enqueueDailyGap } from './index/daily-refresh';
 import type { AuthProps, Env } from './types';
 import { SCOPES } from './types';
 
-const SERVER_INFO = { name: 'xunji-mcp', version: '0.2.0' } as const;
+const SERVER_INFO = { name: 'xunji-mcp', version: '0.2.1' } as const;
 
 function writeEnabled(env: Env): boolean {
   return (env.WRITE_TOOLS_ENABLED ?? '').toLowerCase() === 'true';

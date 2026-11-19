@@ -1,6 +1,6 @@
 {
   "name": "xunji-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Self-hosted, agent-native MCP bridge for Xunji (训记) training data, deployable on Cloudflare Workers with OAuth 2.1.",
   "keywords": [
     "mcp",

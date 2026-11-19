@@ -23,12 +23,16 @@ if (!BASE) {
 }
 const withOauth = process.argv.includes('--oauth');
 const passphrase = process.env.OWNER_PASSPHRASE ?? '';
+const accessJwt = process.env.ACCESS_JWT ?? '';
 const resource = `${BASE}/mcp`;
 
 const results: Array<{ name: string; ok: boolean; detail?: string }> = [];
 function record(name: string, ok: boolean, detail = ''): void {
   results.push({ name, ok, detail });
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`);
+}
+function skip(name: string, detail: string): void {
+  console.log(`SKIP  ${name} — ${detail}`);
 }
 
 async function json(url: string): Promise<{ response: Response; body: any }> {
@@ -103,7 +107,19 @@ if (withOauth) {
   authorize.searchParams.set('code_challenge_method', 'S256');
   authorize.searchParams.set('resource', resource);
 
-  const page = await fetch(authorize, { redirect: 'manual' });
+  const authHeaders: Record<string, string> = accessJwt
+    ? { 'cf-access-jwt-assertion': accessJwt }
+    : {};
+  const page = await fetch(authorize, { redirect: 'manual', headers: authHeaders });
+  if (page.status === 403 || page.status === 302) {
+    const location = page.headers.get('location') ?? '';
+    skip(
+      'authorization page',
+      location.includes('cloudflareaccess.com')
+        ? 'behind Cloudflare Access; complete the browser flow or pass ACCESS_JWT'
+        : `HTTP ${page.status}; complete the flow in a browser`,
+    );
+  } else {
   const html = await page.text();
   const handle = /name="handle" value="([^"]+)"/.exec(html)?.[1];
   const cookie = (page.headers.getSetCookie?.() ?? [])
@@ -121,7 +137,7 @@ if (withOauth) {
     const approved = await fetch(`${BASE}/authorize`, {
       method: 'POST',
       redirect: 'manual',
-      headers: { cookie, 'content-type': 'application/x-www-form-urlencoded' },
+      headers: { cookie, 'content-type': 'application/x-www-form-urlencoded', ...authHeaders },
       body: form,
     });
     const location = approved.headers.get('location') ?? '';
@@ -163,6 +179,7 @@ if (withOauth) {
         );
       }
     }
+  }
   }
 }
 

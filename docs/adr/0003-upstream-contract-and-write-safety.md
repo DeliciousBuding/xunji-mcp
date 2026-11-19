@@ -1,5 +1,7 @@
 # ADR 0003 — Upstream contract, rate limits and write safety
 
+[English](0003-upstream-contract-and-write-safety.md) · [简体中文](0003-upstream-contract-and-write-safety.zh-CN.md)
+
 - Status: accepted
 - Date: 2026-11-19
 
@@ -9,7 +11,7 @@ The Xunji Open API is documented through the vendor's own Agent Skill and the
 public `Xunji-movements` repository. Its observable behavior differs from a
 conventional REST API in ways that must be encoded once, centrally.
 
-Verified on 2026-11-19 against the operator's own account:
+Previously observed upstream behavior, recorded without account values:
 
 | Behavior         | Observation                                                                                                   |
 | ---------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -18,41 +20,62 @@ Verified on 2026-11-19 against the operator's own account:
 | Compression      | gzip at the transfer layer for larger replies; small ones are plain.                                          |
 | Rate limit       | Same key + same day: 15s light, 30s `include_full_data`. Different days are independent.                      |
 | Limits block     | Returned in every train read (`limits.readRateLimitSecondsLight/Full`, write 45s).                            |
-| Write `dry_run`  | **Ignored.** A request with `dry_run: true` created the record.                                               |
+| Write `dry_run`  | Ignored; a request carrying the flag can still write.                                                         |
 | Delete           | No endpoint documented or observed.                                                                           |
-| Catalog          | `POST /api_movement_catalog_for_llm_v2` with `{}`; public, no key required.                                   |
+| Catalog          | `POST /api_movement_catalog_for_llm_v2` with `{}`; answered without a valid key.                              |
 | Plans            | `POST /open/plan/query_gzip` on `api.xunjiapp.cn`, same key, actions `list` and `get`.                        |
 | Other domains    | Body and food/nutrition endpoints require **separate keys**; the training key is rejected (`apikey invalid`). |
 
 ## Decision
 
-1. Treat the write endpoint as always-live. The bridge never sends `dry_run`
-   and never presents a preview as safe. The only preview is a local
-   confirmation step performed by the calling agent before invoking the tool.
-2. Normalize once, in `src/domain/normalize.ts`. Tools never return raw
-   upstream payloads; free-text notes are opt-in and attached calories/color
-   are parsed into fields.
-3. Compute volume from completed sets only, with bodyweight as zero load.
-   Unchecked sets are preserved in returned data but never counted.
-4. Centralize pacing in a Durable Object keyed by `(subjectHash, date, mode)`:
-   reserve a slot, wait a bounded amount, or return `deferred` with a precise
-   retry hint. A vendor soft rate-limit sets a cooldown visible to the next
-   caller.
-5. Cache normalized payloads per subject for 6h (past days), 60s (today) and
-   15m (future). Writes invalidate the day by overwriting it with the server's
-   standardized response.
-6. Range tools cap at two uncached upstream reads per call and report
-   `pending` dates. This keeps tool calls below common client timeouts and
-   makes coverage explicit rather than silently partial.
-7. Data domains other than training are not registered. Body and nutrition
-   adapters would need their own keys and their own live verification; shipping
-   them untested would violate the "no invented coverage" rule.
+1. Treat the write endpoint as always live. Register the tool only with enabled
+   training, read scope, `WRITE_TOOLS_ENABLED=true` and write scope. Require
+   `confirmed: true` and a date within the implemented 190-day guard. The
+   agent must show the exact change for confirmation before calling it.
+   No `dry_run` field or delete tool is provided.
+2. Centralize envelopes, compression and typed failures in
+   `src/upstream/client.ts`. Normalize training output in
+   `src/domain/normalize.ts`; D1 facts and query metrics use the index/metrics
+   modules. Selected plan values stay opaque.
+3. Indexed queries select completed sets, exclude warmups by default, do not
+   double unilateral weights and bound Epley estimates to 1–12 reps.
+   Current arithmetic uses numeric recorded weight: `selfWeight` does not
+   override an explicit load. Legacy normalization has different warmup/reps
+   behavior. These limits are explicit in [tools](../tools.md).
+4. Reserve pacing in a Durable Object keyed by `(subjectHash, date, mode)`.
+   Bounded waits become `deferred`; vendor soft rate limits store cooldowns.
+   These entries are not a global gate for all callers of the same upstream key.
+5. Cache unwrapped vendor day responses per subject and mode for five minutes
+   today and two minutes yesterday. Other dates are not written to the day
+   cache. Catalog caching lasts seven days. All cache puts use a D1 budget;
+   scans skip KV entirely.
+6. Keep legacy ranges bounded to 31/62 days and at most two successful uncached
+   reads per call, with `pending`/`deferred`. Historical calls have no
+   persistent cursor; use narrower pending ranges or indexed queries.
+7. Use D1 plus a resumable scan coordinator for history. Queries report
+   `complete`/`empty`/`pending`/`error` coverage. Refresh replaces source facts
+   in batches and then records scan status; the whole day is not atomic.
+   The cron fills the uncovered tail through yesterday, not old edits.
+8. Optional body/nutrition tools need independent secrets and enabled domains.
+   Their adapters come from vendor skills and remain marked `verified: false`;
+   no live success or complete retrieval is inferred from configuration.
 
 ## Consequences
 
-- A 31-day range needs several calls. That is a faithful representation of the
-  vendor limit, not a bridge defect.
+- A legacy range can be partial. Repeating the same historical window does not
+  accumulate coverage through KV; an indexed backfill is the history path.
 - The bridge can never claim "deleted". Documentation and tool descriptions say
   so explicitly.
-- The write tool remains code-complete but unregistered by default; its tests
-  mock the upstream and assert that no `dry_run` field is ever sent.
+- The write adapter exists but defaults off. A nonempty response may replace an
+  eligible light cache entry, but does not update D1 or invalidate full entries.
+  Read back the change and refresh derived facts separately.
+- Session `noteText` is opt-in; movement/set note fields and parsed
+  calories/color may still appear. Clients must treat all returned text as data.
+- Repository checks must use synthetic fixtures and stubbed upstream HTTP.
+  Live verification is a separate operator activity and belongs in private
+  records; enabling writes is not a verification shortcut.
+- `coverage.complete` establishes terminal scan coverage, not an untruncated
+  full upstream payload. A failed replacement can leave partial facts.
+
+See [upstream contracts](../api-contract.md), [coverage](../coverage.md) and
+[the threat model](../threat-model.md) for the current verification boundaries.

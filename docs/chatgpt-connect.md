@@ -1,12 +1,15 @@
 # Connecting ChatGPT
 
+[English](chatgpt-connect.md) · [简体中文](chatgpt-connect.zh-CN.md)
+
 ChatGPT's custom connectors use the MCP authorization contract: protected
 resource metadata, authorization-server metadata, and an authorization-code
-flow with PKCE. This bridge implements that contract; the steps below are what
-the operator actually does.
+flow with PKCE. The bridge implements that connection path. Client UI names
+and availability depend on the ChatGPT plan and workspace.
 
 > Compatibility is verified per deployment. Until you complete this flow in your
-> own workspace, treat ChatGPT support as "implemented", not "verified".
+> own workspace, OAuth, tool use and optional MCP Apps rendering remain
+> separate checks.
 
 ## Prerequisites
 
@@ -19,20 +22,22 @@ the operator actually does.
 
 ## 1. Add the connector
 
-1. Open ChatGPT settings → **Connectors** → **Advanced** / **Developer mode**.
+1. Open ChatGPT settings and the custom connector/app controls. Existing
+   interfaces may label them **Connectors**, **Advanced** or **Developer mode**;
+   use the controls available in your workspace.
 2. Create a custom connector with the MCP URL:
-   `https://your-domain.example/mcp`.
-3. Authentication: **OAuth**. Do not paste a bearer token; the bridge does not
-   accept one outside OAuth.
+   `https://exercise.example.com/mcp` (replace the example origin).
+3. Authentication: **OAuth**. Keep the Xunji key in the Worker secret; the
+   client receives provider-issued OAuth tokens.
 
-The connector page shows the exact redirect URI and client metadata document it
-will use. CIMD is preferred; DCR is available for older clients. No manual
-client registration is needed — and if ChatGPT uses CIMD, there is no
-registration step at all.
+Use the exact redirect URI and client identity supplied by the client.
+CIMD is enabled; DCR at `/oauth/register` is available for clients that need
+it. A CIMD client uses its metadata URL as its identity and does not need a
+separate DCR request. Registration alone grants no access.
 
 ## 2. Complete the browser flow
 
-1. ChatGPT opens `https://your-domain.example/authorize?...` with `state`,
+1. ChatGPT opens `https://exercise.example.com/authorize?...` with `state`,
    `code_challenge`, `resource` and scopes.
 2. If Access protects the page, sign in there.
 3. The consent page names the client, the redirect host and the scopes, and asks
@@ -41,43 +46,85 @@ registration step at all.
    `iss`.
 5. ChatGPT exchanges the code with its PKCE verifier at `/oauth/token`.
 
-If any step fails, the page explains why and no grant is created.
+The authorization page refuses an unverified operator or invalid/expired
+consent. Invalid requests can produce a local error page; approved and denied
+provider redirects include `iss`.
+
+The provider advertises `xunji:read`, `xunji:write` and `offline_access`.
+The current consent handler grants read and, only when enabled, write; it
+filters `offline_access` out. Refresh-token rotation and the 30-day idle
+lifetime are implemented by the provider separately.
 
 ## 3. Verify
 
-Ask the model to call:
+Confirm tool discovery, then ask the model to call:
 
 ```text
 xunji_capabilities
 ```
 
-Then:
+This reports configuration and index counters, not a live validation of the
+upstream key. The capability matrix can differ from the tools available to
+the current token; use the connector's actual tool inventory.
 
-```text
-xunji_get_training_day  {"date":"<a date you trained>"}
+For a D1 deployment with a history start/backfill, call:
+
+```json
+{ "range": { "preset": "all_time" }, "includeToday": false }
 ```
 
-Confirm the returned title/volume match the Xunji app. Then try
-`xunji_training_stats` over the last week.
+with `xunji_training_overview`. Inspect the returned range and
+`coverage.complete`, pending/error counts and freshness before interpreting
+the KPIs. A successful partial query is not a completed-history check.
+
+For a direct read, choose a private date and replace the placeholder:
+
+```text
+xunji_get_training_day  {"date":"YYYY-MM-DD"}
+```
+
+Compare the returned counts/aggregates with the Xunji app privately. A
+`no_training` day is a valid empty read; a deferred read requires waiting for
+the retry hint. Keep dates, titles, weights, account identifiers and deployment
+details out of public screenshots or verification reports.
+
+Legacy range/statistics tools have a two-uncached-read budget and explicit
+`pending`/`deferred`. Narrow follow-up requests to pending days, or use the
+index; repeating a historical range is not pagination.
+
+## Optional MCP Apps rendering
+
+The operator can set `MCP_UI_ENABLED=true` with D1 and training enabled.
+The overview tool then links `ui://xunji/overview` as
+`text/html;profile=mcp-app` using `_meta.ui.resourceUri` and
+`openai/outputTemplate`.
+
+The view uses the existing structured result, has Simplified Chinese labels,
+and makes no network requests or storage writes. Confirm separately that the
+host discovers the resource and renders KPIs/monthly volume. A successful
+overview tool call does not establish app rendering; a host without support
+can keep using text and structured data.
 
 ## Troubleshooting
 
-| Symptom                                                          | Likely cause                                                                                      |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Connector reports "OAuth not supported"                          | AS metadata missing S256 or discovery path wrong; check `/.well-known/oauth-authorization-server` |
-| `invalid_redirect_uri`                                           | The client reused a redirect URI not present in its registration/CIMD document                    |
-| Authorization page 403 with "Access did not provide an identity" | `/authorize` is not behind Access, or the JWT audience/team is misconfigured                      |
-| 401 after connecting                                             | Token audience does not equal `PUBLIC_ORIGIN + /mcp`; check `PUBLIC_ORIGIN`                       |
-| `deferred` results                                               | The vendor is pacing reads; wait `retryAfterSeconds` and retry                                    |
-| Writes unavailable                                               | Expected: `WRITE_TOOLS_ENABLED=false` by default                                                  |
-| New tools missing after a bridge upgrade                         | The connector snapshots its tool list at creation; remove and re-add it, then approve OAuth again |
+| Symptom                                                          | Likely cause                                                                                                                            |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Connector reports "OAuth not supported"                          | AS metadata missing S256 or discovery path wrong; check `/.well-known/oauth-authorization-server`                                       |
+| `invalid_redirect_uri`                                           | The client reused a redirect URI not present in its registration/CIMD document                                                          |
+| Authorization page 403 with "Access did not provide an identity" | `/authorize` is not behind Access, or the JWT audience/team is misconfigured                                                            |
+| 401 after connecting                                             | Token audience does not equal `PUBLIC_ORIGIN + /mcp`; check `PUBLIC_ORIGIN`                                                             |
+| `deferred` results                                               | The vendor is pacing reads; wait `retryAfterSeconds` and retry                                                                          |
+| Writes unavailable                                               | Expected: `WRITE_TOOLS_ENABLED=false` by default                                                                                        |
+| New tools missing after a bridge upgrade                         | Check token scopes/domain flags first; the client may cache inventory. Refresh or reconnect using its controls, or remove and re-add it |
+| Indexed query reports incomplete coverage                        | Backfill/refresh is still pending, failed or outside the configured start; inspect `xunji_history`                                      |
+| Overview succeeds but no app view appears                        | UI flag or resource missing, or the host does not render MCP Apps; check inventory separately                                           |
 
 ## Re-authenticating
 
-Removing `OWNER_PASSPHRASE` does not disconnect an existing connector: ChatGPT
-keeps using its refresh token until you revoke the connector or the grant. You
-only need the browser flow again when you add a connector, re-add one after
-removing it, or revoke and reconnect.
+Removing `OWNER_PASSPHRASE` changes future consent, not existing OAuth grants.
+An existing client can continue while its tokens remain valid. Run the browser
+flow again to reconnect after revocation/expiry, or to request newly enabled
+write scope. If tools are missing, first check actual scope and configuration.
 
 1. In ChatGPT, open the connector and choose **Reconnect** (or remove and add it
    again with the same `/mcp` URL).
@@ -87,15 +134,15 @@ removing it, or revoke and reconnect.
 3. Approve the consent page. ChatGPT receives a new code and exchanges it for a
    fresh access/refresh token.
 
-There is no separate bridge password to remember: the operator identity is the
-Access login. If the Access session is still valid, step 2 may be skipped.
+In Access-only mode, the operator uses the Access login. A still-valid Access
+session may avoid another sign-in prompt.
 
 ### If Access itself is broken
 
 Recovery is deliberately manual and temporary:
 
 ```bash
-# 1. Put a new high-entropy passphrase back
+# 1. Temporarily configure a high-entropy passphrase
 printf '%s' "$NEW_PASSPHRASE" | npx wrangler secret put OWNER_PASSPHRASE
 
 # 2. Complete the consent flow with that passphrase
@@ -104,11 +151,19 @@ printf '%s' "$NEW_PASSPHRASE" | npx wrangler secret put OWNER_PASSPHRASE
 npx wrangler secret delete OWNER_PASSPHRASE
 ```
 
-Do not leave the fallback in place "just in case"; that is the state this
-section exists to avoid. The passphrase is only a break-glass path.
+The Worker accepts the passphrase when no Access identity is available even
+if Access settings remain configured. It does not bypass an Access gateway
+that blocks the browser before the Worker; restoring that route remains an
+operator task. Remove the fallback after recovery.
 
 ## Revoking access
 
-Revoke the connector in ChatGPT settings, or remove the grant server-side with
-the provider's `deleteClient`/grant helpers. Access tokens expire within an
-hour; refresh tokens expire after 30 idle days.
+Use the client's revoke controls when available, or revoke the server-side
+grant with the provider's `revokeGrant`/`deleteClient` helpers. The bridge has
+no grant-administration endpoint. Removing a client entry from a UI should not
+be treated as proof of server-side revocation.
+
+Access tokens last one hour; refresh grants use a 30-day sliding idle lifetime.
+Revocation, token expiry and changes to the operator sign-in gate are different
+operations. See [the identity ADR](adr/0002-oauth-and-identity.md),
+[coverage](coverage.md) and [the threat model](threat-model.md).

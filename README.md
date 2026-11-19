@@ -62,7 +62,7 @@ Read [SECURITY.md](SECURITY.md) and [docs/threat-model.md](docs/threat-model.md)
 
 ## Status
 
-The protocol and upstream behavior are covered by unit, contract and workerd integration tests. A live ChatGPT connection is verified per deployment, not by this repository; see [docs/acceptance.md](docs/acceptance.md) for the exact criteria and their current state.
+The protocol and upstream behavior are covered by unit, contract and workerd integration tests (34 at v0.1.0). On 2026-11-19 a private deployment completed the full path: OAuth through Cloudflare Access, a ChatGPT connector connection, and a live `tools/call` returning the expected session and movement counts. That verification is deployment-specific; see [docs/acceptance.md](docs/acceptance.md) for each criterion and how to repeat it.
 
 ## License
 

@@ -1,47 +1,64 @@
 # Security policy
 
+[English](SECURITY.md) | [简体中文](SECURITY.zh-CN.md)
+
 ## Reporting a vulnerability
 
-Open a private security advisory on the GitHub repository, or email the
-maintainer listed there. Do not open a public issue for a vulnerability.
-Please include the affected path, a minimal reproduction, and the impact you
-believe it has. We aim to acknowledge within a few days.
+Use [GitHub private vulnerability reporting](https://github.com/DeliciousBuding/xunji-mcp/security/advisories/new).
+Include the affected version/path, a minimal synthetic reproduction and the
+impact. Keep credentials, personal records and private deployment details out
+of the report. Do not report vulnerabilities in a public issue.
 
 ## Deployment assumptions
 
-This project is designed for **one operator and one Xunji account**. Running it
-as a multi-tenant service is outside the threat model: the Worker holds one
-vendor key, and every authorized client reads the same account.
+One deployment serves one operator's Xunji account. Every authorized client
+reads that account, including its shared D1 index. Hashed cache subjects do not
+make this a multi-tenant service.
 
 Before exposing an instance publicly:
 
-1. Set `ALLOWED_USER_EMAILS` to exactly the operator's address.
-2. Protect `/authorize` with Cloudflare Access, or set a long random
-   `OWNER_PASSPHRASE`. Never leave both unset expecting access to work — the
-   bridge fails closed.
-3. Keep `WRITE_TOOLS_ENABLED=false` unless writes are genuinely needed. The
-   vendor's write endpoint ignores `dry_run`, so a mistake is a real record.
-4. Keep the Xunji key in a Worker secret. Rotate it if it was ever pasted into a
-   chat, a ticket, a shell argument or a log.
-5. Review deployed `/healthz` output: it must not reveal keys or data.
-6. Disable the `workers.dev` route. Access policies are host-scoped, so the
-   default address bypasses the `/authorize` gate.
-7. Remove `OWNER_PASSPHRASE` after Access works. Keep it in a password manager
-   only as a break-glass fallback; it is a second key that works on every entry
-   point that reaches the Worker.
+1. Configure Cloudflare Access for `/authorize`, with `ACCESS_TEAM_DOMAIN`,
+   `ACCESS_AUD` and an `ALLOWED_USER_EMAILS` allowlist containing only the
+   operator. The Worker verifies the JWT signature, issuer, audience and expiry.
+   Passphrase mode is an alternative using a long random `OWNER_PASSPHRASE`.
+   Authorization fails closed when neither mode is configured.
+2. Disable the `workers.dev` route with `workers_dev: false`. Access policies
+   are host-scoped; an alternate route may bypass the Access application, though
+   the Worker's identity verification still applies.
+3. Remove the deployed `OWNER_PASSPHRASE` once Access works. A configured
+   passphrase remains an alternative authorization path on any reachable host.
+   Keep an emergency copy only in the operator's password manager.
+4. Keep `WRITE_TOOLS_ENABLED=false` unless a real write is needed. Enabling
+   writes also requires a token with `xunji:write` and `confirmed: true` for each
+   call. The bridge never sends `dry_run` and provides no delete operation.
+5. Store each vendor key as a Worker secret. Enable optional domains only with
+   their matching keys; their live verification is still pending.
+6. Review health/discovery and authorization rejection behaviour. Keep
+   `/admin/*` disabled unless needed; it has a separate `ADMIN_TOKEN`, and its
+   coverage output may reveal dates and counts.
 
 ## Secrets that must never be committed
 
-| Secret                              | Storage                                                   |
-| ----------------------------------- | --------------------------------------------------------- |
-| `XUNJI_API_KEY`                     | `wrangler secret put XUNJI_API_KEY`                       |
-| `OWNER_PASSPHRASE`                  | `wrangler secret put OWNER_PASSPHRASE` (break-glass only) |
-| `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` | Worker secret or private vars                             |
-| `ADMIN_TOKEN` (optional `/admin/*`) | Worker secret                                             |
-| Cloudflare API token                | local environment only                                    |
+| Secret or private setting                                 | Storage                                        |
+| --------------------------------------------------------- | ---------------------------------------------- |
+| `XUNJI_API_KEY`                                           | Worker secret for training/plan access         |
+| `XUNJI_BODY_KEY`                                          | Optional Worker secret for body measurements   |
+| `XUNJI_FOOD_KEY`                                          | Optional Worker secret for food records        |
+| `XUNJI_FOOD_SEARCH_KEY`                                   | Optional Worker secret for food catalog search |
+| `OWNER_PASSPHRASE`                                        | Worker secret in passphrase mode               |
+| `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `ALLOWED_USER_EMAILS` | Private deployment secrets/vars as appropriate |
+| `ADMIN_TOKEN`                                             | Optional Worker secret for `/admin/*`          |
+| Cloudflare API token                                      | Private local environment or CI secret         |
 
 `.gitignore` excludes `wrangler.jsonc`, `.dev.vars`, `.env*` and `.local/`.
-A CI secret scan runs on every push.
+CI scans for credential patterns. Use synthetic fixtures and example domains;
+pattern scanning does not replace review of records, screenshots and history.
+
+If a key is exposed, revoke/rotate it in Xunji and replace the matching Worker
+secret. Revoke affected OAuth grants as well. Rotation does not clear indexed
+history or client copies; follow [Privacy](PRIVACY.md) for storage cleanup.
+Operator confirmation of key rotation remains pending in the
+[verification record](docs/acceptance.md).
 
 ## Quota isolation
 
@@ -55,10 +72,20 @@ not spend it on historical reads:
 - `/admin/*` and `xunji_history` report the counters; over-budget writes are
   skipped and marked `budgetDegraded`.
 
-## What the bridge does not do
+These are per-deployment guardrails, not reservations of account-wide quota.
+OAuth provider KV writes and other Workers also consume the account allowance.
 
-- It does not accept a static bearer token as a substitute for OAuth.
-- It does not log request bodies, headers, upstream payloads or tokens.
-- It does not expose nutrition or body data, because those need different
-  vendor keys that this project does not manage.
-- It does not delete training records; the upstream API has no such operation.
+## Access and capability limits
+
+`/mcp` uses the OAuth provider; a static admin token is not a substitute for an
+MCP grant. The `xunji:read` scope includes index backfill/refresh controls, which
+change bridge storage while only reading Xunji.
+
+Body, nutrition and food-search adapters are implemented. Registration requires
+both the corresponding `body`/`nutrition` entry in `ENABLED_DATA_DOMAINS` and
+the separate vendor secret. They remain marked `verified: false`; having a key
+does not establish live compatibility.
+
+Personal template mutation and upstream deletion are outside the exposed
+surface. Correct training sessions through `localid` upsert or the Xunji app.
+For the full model, see [Threat model](docs/threat-model.md).

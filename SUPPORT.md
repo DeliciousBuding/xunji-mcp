@@ -1,27 +1,51 @@
 # Support
 
+[English](SUPPORT.md) | [简体中文](SUPPORT.zh-CN.md)
+
 ## Where to ask
 
-- **Usage and setup questions**: open a GitHub issue with the
-  [question](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=bug_report.yml)
-  template and describe your deployment shape.
-- **Documentation or client compatibility**: open a feature request and name the
-  client and transport you use.
-- **Security issues**: do not open a public issue. Follow [SECURITY.md](SECURITY.md).
+- Usage and setup questions: [open an issue](https://github.com/DeliciousBuding/xunji-mcp/issues/new/choose)
+  and describe your deployment shape. There is no dedicated question template.
+- Unexpected behaviour: use the [bug report template](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=bug_report.md).
+- Capability requests or documentation improvements: use the
+  [feature request template](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=feature_request.md).
+- Vulnerabilities or sensitive disclosures: follow [Security](SECURITY.md)
+  through a private report.
 
 ## What to include
 
-- The MCP client and how it connects (CIMD or DCR, browser flow or CLI).
-- Whether `/authorize` is behind Cloudflare Access or uses the passphrase.
-- The tool name and a redacted error code from the response.
-- `npm run check` output if you are running from source.
+- The bridge version/tag, MCP client and transport.
+- Registration mode if known (CIMD or DCR), and browser or CLI authorization.
+- Whether `/authorize` uses Cloudflare Access or a passphrase; whether writes,
+  the index or the optional UI are enabled.
+- The tool name, redacted error code and a synthetic reproduction.
+- Checks you actually ran, with their scope. For source changes, `npm run check`
+  is the local check suite.
 
-Never include API keys, OAuth tokens, real training data, account identifiers or
-private deployment hosts. Redact dates and weights if they are personal.
+Exclude API keys, OAuth tokens, real records or aggregates, account identifiers,
+emails, private hosts and deployment IDs. Replace personal dates, weights and
+counts with synthetic examples before sharing logs or screenshots.
 
-## What is not supported
+## Capability and support boundaries
 
-- Multi-tenant deployments with several Xunji accounts in one Worker.
-- Nutrition or body-data tools (separate vendor keys, not implemented).
-- Recovery of deleted training data; the vendor exposes no delete API.
-- Medical or training advice.
+One Worker serves one Xunji account. Multi-tenant deployments, recovery of
+deleted source records and medical/training advice are outside the project's
+scope.
+
+Body measurements, food records and food search have optional adapters. Their
+matching secrets (`XUNJI_BODY_KEY`, `XUNJI_FOOD_KEY`, `XUNJI_FOOD_SEARCH_KEY`)
+and domain configuration are required before registration. They remain
+unverified against live upstream; check `xunji_capabilities` and the
+[verification record](docs/acceptance.md) before assuming availability.
+
+The MCP Apps overview is optional and disabled by default. Resource
+registration has historical verification, but real ChatGPT rendering remains a
+client-side pending item. Include the client/version when reporting UI issues.
+
+Training writes are real, disabled by default, and require `xunji:write` plus
+`confirmed: true`. There is no dry run or delete tool. Correct an existing
+session with `localid`, or manage records in the Xunji app.
+
+Operators manage keys, grants, backups and cleanup. Key rotation still needs
+operator confirmation. See [Privacy](PRIVACY.md) for retained data and
+[Deployment](docs/deployment.md) for instance setup.

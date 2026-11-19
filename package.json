@@ -1,6 +1,6 @@
 {
   "name": "xunji-mcp",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Self-hosted, agent-native MCP bridge for Xunji (训记) training data, deployable on Cloudflare Workers with OAuth 2.1.",
   "keywords": [
     "mcp",
@@ -12,7 +12,7 @@
     "agent",
     "chatgpt"
   ],
-  "homepage": "https://github.com/DeliciousBuding/xunji-mcp#readme",
+  "homepage": "https://deliciousbuding.github.io/xunji-mcp/",
   "bugs": {
     "url": "https://github.com/DeliciousBuding/xunji-mcp/issues"
   },
@@ -41,7 +41,9 @@
     "cf-typegen": "wrangler types",
     "secret-scan": "node scripts/secret-scan.mjs --history",
     "smoke": "node --experimental-strip-types scripts/smoke.ts",
-    "bench": "node bench/run.mjs"
+    "bench": "node bench/run.mjs",
+    "site:build": "node scripts/build-site.mjs",
+    "cover:render": "node scripts/render-cover.mjs"
   },
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "^1.2.4",
@@ -56,6 +58,7 @@
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "gpt-tokenizer": "^3.4.0",
+    "playwright-core": "^1.65.1",
     "prettier": "^3.6.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",

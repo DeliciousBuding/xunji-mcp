@@ -27,6 +27,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
+      - run: npm run site:build
       - run: npm test
       - name: Secret scan (worktree and history)
         run: node scripts/secret-scan.mjs --history

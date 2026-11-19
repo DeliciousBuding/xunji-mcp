@@ -2,10 +2,10 @@
 
 [English](acceptance.md) | [简体中文](acceptance.zh-CN.md)
 
-This is a historical verification record inherited from the existing release
-documentation. No tests, benchmarks, deployments or live client checks were
-run for this documentation update. Personal records, aggregates, date ranges
-and deployment identifiers are intentionally omitted.
+The table records verification inherited from earlier releases. Current
+release checks are recorded separately below; they do not repeat the historical
+private-client checks. Personal records, aggregates, date ranges and deployment
+identifiers are omitted.
 
 Status legend: **PASS** records earlier verification within the stated scope;
 **PARTIAL** records implementation/mock coverage without full live verification;
@@ -60,10 +60,33 @@ Optional adapters remain `verified: false`. Configuration or mock coverage
 must not be described as live verification. Key rotation and ChatGPT MCP Apps
 rendering remain operator/client pending respectively.
 
+## v0.3.1 repository and website checks
+
+The current publication adds checks for the site and bilingual documentation:
+
+| Check                   | Result and scope                                                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Types, lint, formatting | `npm run typecheck`, `npm run lint`, `npm run format:check`                                                                                   |
+| workerd                 | 68 tests across 11 files, with stubbed upstream HTTP                                                                                          |
+| Dependency audit        | `npm audit --omit=dev --audit-level=high`: 0 vulnerabilities                                                                                  |
+| Worker bundle           | `wrangler deploy --dry-run --config wrangler.example.jsonc`: public example only                                                              |
+| Site build              | English and Chinese static output, local CSS/JS/images, no upstream access                                                                    |
+| Browser behavior        | 10 Edge cases across both locales and 320/390/768/1024/1440px; no horizontal overflow, broken images or script errors; tabs and FAQ exercised |
+| Documentation           | 59 Markdown files, 364 local references, no missing translation counterpart                                                                   |
+| Banner exports          | README 2560×1280; social preview 1280×640; both 2:1 PNG                                                                                       |
+
+The credential scanner passes on the working tree and reachable Git history.
+It checks credential patterns, not arbitrary personal data. The current public
+documents omit private statistics; older published Git objects still retain
+some prior verification aggregates. Removing those objects requires a separate
+history cleanup.
+
+These checks do not re-run private account reads, verify body/nutrition, or
+establish ChatGPT MCP Apps rendering.
+
 ## Definition of done for a release
 
-This checklist describes release work, not checks performed for this document
-update.
+Apply this checklist to the scope of each release.
 
 1. Run the applicable typecheck, lint, formatting and workerd tests; use upstream
    stubs and report the exact commands/results.

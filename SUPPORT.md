@@ -4,8 +4,8 @@
 
 ## Where to ask
 
-- Usage and setup questions: [open an issue](https://github.com/DeliciousBuding/xunji-mcp/issues/new/choose)
-  and describe your deployment shape. There is no dedicated question template.
+- Usage and setup questions: use the [question template](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=question.md)
+  and describe your deployment shape.
 - Unexpected behaviour: use the [bug report template](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=bug_report.md).
 - Capability requests or documentation improvements: use the
   [feature request template](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=feature_request.md).

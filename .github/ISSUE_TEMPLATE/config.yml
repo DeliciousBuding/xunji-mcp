@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation / 文档
+    url: https://github.com/DeliciousBuding/xunji-mcp/tree/main/docs
+    about: Deployment, tool contracts, and troubleshooting / 部署、工具契约与排障
+  - name: Private security report / 私密安全报告
+    url: https://github.com/DeliciousBuding/xunji-mcp/security/advisories/new
+    about: Report vulnerabilities privately / 漏洞请通过私密渠道报告

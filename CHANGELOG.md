@@ -1,5 +1,36 @@
 # Changelog
 
+[English](CHANGELOG.md) · [简体中文](CHANGELOG.zh-CN.md) · [Release notes](docs/releases/README.md)
+
+## 0.3.1 — 2026-11-19
+
+### Added
+
+- Bilingual GitHub Pages project site, with separate English and Chinese URLs,
+  synthetic interactive examples, accessible controls, and local assets.
+- Matching Chinese documentation for architecture, upstream contracts, tools,
+  deployment, client connection, privacy, security, contribution, and acceptance.
+- Bilingual historical release notes and a shared documentation index.
+- Centered rounded-icon cover, local Manrope/Noto Sans SC fonts, editable
+  HTML/CSS, and browser-rendered 2560×1280 README and 1280×640 sharing PNGs.
+- Project icon, README branding, and MCP `icons` metadata added after the v0.3.0 tag.
+
+### Changed
+
+- README presents questions, supported scope, setup, and validation with
+  consistent navigation between languages.
+- Privacy and support guides reflect D1, short-lived KV cache, Durable Object
+  state, and the optional body/nutrition adapters.
+- Public acceptance documentation omits personal training statistics and private
+  deployment identifiers.
+
+### Fixed
+
+- `xunji_capabilities` reports the shared server version instead of a stale
+  hardcoded v0.2.0 value.
+- The consent page explains persistent analytics-index storage alongside the
+  OAuth state and read cache.
+
 ## 0.3.0 — 2026-11-19
 
 ### Added
@@ -11,8 +42,6 @@
   fallback.
 - The tool advertises `_meta.ui.resourceUri` and the ChatGPT Apps SDK
   `openai/outputTemplate` when `MCP_UI_ENABLED=true`; the default is off.
-- Project icon (`assets/icon.png`), a 1280×640 social preview, README header
-  logo, and MCP `icons` metadata on the server and UI resource.
 
 ## 0.2.1 — 2026-11-19
 

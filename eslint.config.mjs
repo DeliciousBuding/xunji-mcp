@@ -42,4 +42,16 @@ export default tseslint.config(
       globals: { ...globals.node },
     },
   },
+  {
+    files: ['site/client.js'],
+    languageOptions: {
+      globals: { ...globals.browser },
+    },
+  },
+  {
+    files: ['scripts/render-cover.mjs'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
 );

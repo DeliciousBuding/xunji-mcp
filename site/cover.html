@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>xunji-mcp · Project cover</title>
+    <style>
+      @font-face {
+        font-family: 'Manrope';
+        src: url('../assets/fonts/manrope-latin.woff2') format('woff2');
+        font-weight: 200 800;
+        font-display: block;
+      }
+
+      @font-face {
+        font-family: 'Noto Sans SC';
+        src: url('../assets/fonts/noto-sans-sc.woff2') format('woff2');
+        font-weight: 100 900;
+        font-display: block;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1280px;
+        height: 640px;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        color: #f4f5f8;
+        font-family: 'Manrope', sans-serif;
+        font-synthesis: none;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      .cover {
+        position: relative;
+        isolation: isolate;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 1280px;
+        height: 640px;
+        overflow: hidden;
+        background:
+          radial-gradient(ellipse at 50% 28%, #9ab9ee14 0, #6e8da70b 25%, transparent 62%),
+          radial-gradient(ellipse at 50% 120%, #627b9b12, transparent 65%),
+          linear-gradient(180deg, #11141b, #0c0e14 72%, #10131a);
+      }
+
+      .aura {
+        position: absolute;
+        z-index: -1;
+        top: -38px;
+        left: 360px;
+        width: 560px;
+        height: 390px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse, #cbdcfa24, #adc9f207 44%, transparent 72%);
+        filter: blur(30px);
+      }
+
+      .horizon {
+        position: absolute;
+        z-index: -1;
+        left: 190px;
+        right: 190px;
+        top: 196px;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          #9bb4db0b 28%,
+          #cbdfff18 50%,
+          #9bb4db0b 72%,
+          transparent
+        );
+      }
+
+      .composition {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transform: translateY(-2px);
+      }
+
+      .icon-frame {
+        position: relative;
+        width: 136px;
+        height: 136px;
+        margin-bottom: 29px;
+        padding: 1px;
+        border-radius: 33px;
+        background: linear-gradient(140deg, #d2dff782, #60718e35 42%, #8498b459);
+        box-shadow:
+          0 15px 30px #0006,
+          0 0 40px #c0d9ff0a;
+      }
+
+      .icon-frame::after {
+        position: absolute;
+        inset: 1px;
+        border-radius: 32px;
+        background: linear-gradient(145deg, #ffffff08, transparent 50%);
+        content: '';
+      }
+
+      .icon-frame img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 32px;
+      }
+
+      h1 {
+        margin: 0;
+        color: #f5f6fa;
+        font-size: 91px;
+        font-weight: 650;
+        line-height: 1.16;
+        letter-spacing: -4.4px;
+      }
+
+      .chinese {
+        margin: 18px 0 0;
+        color: #d7dde8;
+        font-family: 'Noto Sans SC', sans-serif;
+        font-size: 29px;
+        font-weight: 450;
+        line-height: 1.55;
+        letter-spacing: 0.5px;
+      }
+
+      .english {
+        margin: 11px 0 0;
+        color: #96a3b8;
+        font-size: 21px;
+        font-weight: 450;
+        line-height: 1.6;
+        letter-spacing: 0.1px;
+      }
+
+      .features {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 23px;
+        margin-top: 44px;
+        color: #9eadc3;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.15px;
+      }
+
+      .features span + span::before {
+        display: inline-block;
+        width: 3px;
+        height: 3px;
+        margin-right: 23px;
+        border-radius: 50%;
+        background: #60728b;
+        vertical-align: 3px;
+        content: '';
+      }
+    </style>
+  </head>
+  <body>
+    <main class="cover">
+      <div class="aura" aria-hidden="true"></div>
+      <div class="horizon" aria-hidden="true"></div>
+      <div class="composition">
+        <div class="icon-frame">
+          <img src="../assets/icon.png" width="512" height="512" alt="xunji-mcp icon" />
+        </div>
+        <h1>xunji-mcp</h1>
+        <p class="chinese" lang="zh-CN">让训练数据，与智能对话。</p>
+        <p class="english">Your training. A new perspective.</p>
+        <div class="features">
+          <span>Self-hosted</span>
+          <span>OAuth 2.1</span>
+          <span>Open source</span>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

@@ -100,7 +100,7 @@ ${loopbackWarning}
   </div>
 </form>
 <p class="muted" style="margin-top:1.5rem">
-  This bridge stores only OAuth grants and a short-lived read cache. Your Xunji API key stays on the server.
+  This bridge stores OAuth state and a short-lived read cache. If enabled, its analytics index retains training records until refreshed or removed by the operator. Your Xunji API key stays in Worker secrets.
 </p>
 </body>
 </html>`;

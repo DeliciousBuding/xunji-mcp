@@ -4,10 +4,10 @@
 
 ## 去哪里提问
 
-- 使用和部署问题：[新建 issue](https://github.com/DeliciousBuding/xunji-mcp/issues/new/choose)，
-  说明部署方式。目前没有单独的提问模板。
-- 行为不符合预期：使用 [bug report 模板](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=bug_report.md)。
-- 能力请求或文档改进：使用 [feature request 模板](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=feature_request.md)。
+- 使用和部署问题：使用[提问模板](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=question.zh-CN.md)，
+  说明部署方式。
+- 行为不符合预期：使用[问题反馈模板](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=bug_report.zh-CN.md)。
+- 能力请求或文档改进：使用[功能建议模板](https://github.com/DeliciousBuding/xunji-mcp/issues/new?template=feature_request.zh-CN.md)。
 - 漏洞或敏感披露：按[安全政策](SECURITY.zh-CN.md)提交私密报告。
 
 ## 应提供哪些信息

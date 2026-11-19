@@ -9,7 +9,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import { ICON_URL } from '../branding';
+import { ICON_URL, VERSION } from '../branding';
 import { capabilityMatrix } from '../capabilities';
 import { addDays, todayInXunjiZone } from '../domain/date';
 import { METRIC_KEYS, type MetricKey } from '../domain/metrics';
@@ -157,7 +157,7 @@ export function registerQueryTools(server: McpServer, ctx: QueryToolContext): vo
         (await getMeta<string>(env, 'history_start')) ?? env.HISTORY_START_DATE ?? null;
       const payload = {
         server: 'xunji-mcp',
-        version: '0.2.0',
+        version: VERSION,
         scopes: props.scope,
         writeToolsEnabled:
           (env.WRITE_TOOLS_ENABLED ?? '').toLowerCase() === 'true' &&

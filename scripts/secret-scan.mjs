@@ -102,8 +102,23 @@ function scanHistory() {
     .map((line) => line.trim().split(/\s+/))
     .filter((parts) => parts.length === 2);
 
+  // Tag and tree objects carry no file content; their text would otherwise
+  // match patterns like the tagger's email. Scan blobs only.
+  const types = new Map();
+  if (blobs.length > 0) {
+    const checked = execFileSync('git', ['cat-file', '--batch-check'], {
+      input: blobs.map(([sha]) => sha).join('\n'),
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    for (const line of checked.split('\n')) {
+      const [sha, type] = line.split(' ');
+      if (sha && type) types.set(sha, type);
+    }
+  }
+
   for (const [sha, name] of blobs) {
-    if (SKIP_EXT.test(name)) continue;
+    if (types.get(sha) !== 'blob' || SKIP_EXT.test(name)) continue;
     let text;
     try {
       text = execFileSync('git', ['cat-file', '-p', sha], {

@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon.png" alt="xunji-mcp icon" width="96" height="96"></p>
+
 # xunji-mcp（训记训练数据 MCP 桥）
 
 [![CI](https://github.com/DeliciousBuding/xunji-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/DeliciousBuding/xunji-mcp/actions/workflows/ci.yml)

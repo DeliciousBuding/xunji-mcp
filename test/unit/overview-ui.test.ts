@@ -55,6 +55,7 @@ describe('MCP Apps overview view', () => {
 
     const resource = result.listed.find((entry) => entry.uri === OVERVIEW_UI_URI);
     expect(resource?.mimeType).toBe(OVERVIEW_UI_MIME);
+    expect(resource?.icons?.[0]?.mimeType).toBe('image/png');
 
     const content = result.read.contents[0];
     expect(content?.mimeType).toBe(OVERVIEW_UI_MIME);

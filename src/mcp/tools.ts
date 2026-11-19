@@ -21,6 +21,7 @@ import type { AuthProps, Env, XunjiTrainResponse } from '../types';
 import { SCOPES } from '../types';
 import { failurePayload, jsonResult } from './result';
 import { budgetedCachePut } from '../kv-budget';
+import { ICON_URL, REPO_URL, VERSION } from '../branding';
 import { registerQueryTools } from './query-tools';
 
 export interface ToolContext {
@@ -65,7 +66,12 @@ export function hasScope(props: AuthProps, scope: string): boolean {
 export function buildServer(ctx: ToolContext): McpServer {
   const { env, props } = ctx;
   const server = new McpServer(
-    { name: 'xunji-mcp', version: '0.2.0' },
+    {
+      name: 'xunji-mcp',
+      version: VERSION,
+      websiteUrl: REPO_URL,
+      icons: [{ src: ICON_URL, mimeType: 'image/png', sizes: ['512x512'] }],
+    },
     {
       instructions: [
         "Read-only access to the user's Xunji (训记) training records unless a write tool is explicitly present.",

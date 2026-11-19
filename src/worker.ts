@@ -25,11 +25,12 @@ import {
 } from './auth/identity';
 import { buildServer } from './mcp/tools';
 import { handleAdmin } from './admin';
+import { VERSION } from './branding';
 import { enqueueDailyGap } from './index/daily-refresh';
 import type { AuthProps, Env } from './types';
 import { SCOPES } from './types';
 
-const SERVER_INFO = { name: 'xunji-mcp', version: '0.3.0' } as const;
+const SERVER_INFO = { name: 'xunji-mcp', version: VERSION } as const;
 
 function writeEnabled(env: Env): boolean {
   return (env.WRITE_TOOLS_ENABLED ?? '').toLowerCase() === 'true';

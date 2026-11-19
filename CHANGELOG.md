@@ -11,6 +11,8 @@
   fallback.
 - The tool advertises `_meta.ui.resourceUri` and the ChatGPT Apps SDK
   `openai/outputTemplate` when `MCP_UI_ENABLED=true`; the default is off.
+- Project icon (`assets/icon.png`), a 1280×640 social preview, README header
+  logo, and MCP `icons` metadata on the server and UI resource.
 
 ## 0.2.1 — 2026-11-19
 

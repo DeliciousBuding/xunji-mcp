@@ -9,6 +9,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
+import { ICON_URL } from '../branding';
 import { capabilityMatrix } from '../capabilities';
 import { addDays, todayInXunjiZone } from '../domain/date';
 import { METRIC_KEYS, type MetricKey } from '../domain/metrics';
@@ -113,6 +114,7 @@ export function registerQueryTools(server: McpServer, ctx: QueryToolContext): vo
         description:
           'Compact MCP Apps view for xunji_training_overview: KPIs and a monthly volume chart.',
         mimeType: OVERVIEW_UI_MIME,
+        icons: [{ src: ICON_URL, mimeType: 'image/png', sizes: ['512x512'] }],
       },
       async (uri) => ({
         contents: [

@@ -16,6 +16,10 @@ updates:
       - dependency-name: vitest
         update-types:
           - version-update:semver-major
+      # typescript-eslint 8.x peers cap TypeScript at <6.0.0.
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
   - package-ecosystem: github-actions
     directory: /
     schedule:

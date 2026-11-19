@@ -39,6 +39,7 @@ requires an operator action; **N/A** out of scope.
 | A31 | Real ChatGPT call through a v0.2 query tool                     | New plugin (v2) + OAuth on 2026-11-19; `xunji_training_overview all_time` returned 170 sessions / 2,348 sets / 497,317.6 kg / 444 days / earliest 2025-09-09 | PASS               |
 | A32 | `workers.dev` route does not bypass the Access gate             | Production `workers.dev/healthz` returns 404; Access still fronts `/authorize` with a 302                                                                    | PASS               |
 | A33 | No passphrase fallback once Access is working                   | `wrangler secret list` has no `OWNER_PASSPHRASE`; `/healthz` still reports `identityMode: cf-access`; `/authorize` only accepts an Access identity           | PASS               |
+| A34 | Index tail refreshes daily without client traffic               | `enqueueDailyGap` tests (gap-only, excludes today, no-op without start); production cron `10 16 * * *` deployed in version 107a9d4d                          | PASS               |
 
 ## Definition of done for a release
 

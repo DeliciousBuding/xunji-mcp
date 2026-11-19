@@ -563,6 +563,16 @@ export async function contiguousVerifiedFrom(
   return last;
 }
 
+/** Latest date with a terminal scan result (complete or empty). */
+export async function latestCoveredDate(env: Env): Promise<string | null> {
+  const database = db(env);
+  if (!database) return null;
+  const row = await database
+    .prepare("SELECT MAX(datestr) AS latest FROM scan_day WHERE status IN ('complete','empty')")
+    .first<{ latest: string | null }>();
+  return row?.latest ?? null;
+}
+
 export function scanDailyLimit(env: Env): number {
   const parsed = Number(env.SCAN_DAILY_LIMIT ?? '100');
   return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 100;

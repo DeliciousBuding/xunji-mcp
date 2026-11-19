@@ -46,6 +46,7 @@ Edit `wrangler.jsonc`:
     "KV_WRITE_DAILY_BUDGET": "300",
     "SCAN_DAILY_LIMIT": "100",
   },
+  "triggers": { "crons": ["10 16 * * *"] },
   "routes": [{ "pattern": "your-domain.example", "custom_domain": true }],
 }
 ```
@@ -164,6 +165,11 @@ curl https://your-domain.example/admin/index -H "Authorization: Bearer $ADMIN_TO
 
 The scanner processes at most `SCAN_DAILY_LIMIT` days per UTC day and continues
 on the next day's first alarm. It writes D1 only — no KV writes during scans.
+
+The cron trigger (`10 16 * * *`, 00:10 Asia/Shanghai) keeps the tail current:
+it enqueues the gap between the latest complete/empty day and yesterday, then
+starts the same scanner. It is a no-op until `history_start` exists. Today is
+excluded so a partial day is not indexed; the next run covers it.
 
 Then connect a client (see [chatgpt-connect.md](chatgpt-connect.md)) and call
 `xunji_capabilities`, then `xunji_training_overview`.

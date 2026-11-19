@@ -25,6 +25,7 @@ import {
 } from './auth/identity';
 import { buildServer } from './mcp/tools';
 import { handleAdmin } from './admin';
+import { enqueueDailyGap } from './index/daily-refresh';
 import type { AuthProps, Env } from './types';
 import { SCOPES } from './types';
 
@@ -334,6 +335,19 @@ function providerFor(env: Env): OAuthProvider<Env> {
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     return providerFor(env).fetch(request, env, ctx);
+  },
+
+  /**
+   * Keeps the indexed tail current. A no-op until the operator has set a
+   * history start and there is a gap to fill.
+   */
+  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    const gap = await enqueueDailyGap(env);
+    if (!gap || gap.enqueued === 0 || !env.SCAN_COORDINATOR) return;
+    await env.SCAN_COORDINATOR.get(env.SCAN_COORDINATOR.idFromName('xunji-history')).start(
+      'operator-index',
+      true,
+    );
   },
 } satisfies ExportedHandler<Env>;
 

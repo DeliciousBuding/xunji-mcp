@@ -65,6 +65,10 @@ max.
   transactionally per day.
 - `pause` / `resume` — durable scanner control.
 
+A daily cron fills the gap up to yesterday automatically; `status` reports
+`latestScanned` and coverage so the model can see freshness. Today is not
+indexed until the next day, because the source day may still be in progress.
+
 `earliestRecord` is the earliest **indexed** session. Earlier days are not
 claimed unless the configured start is before them and coverage is complete.
 

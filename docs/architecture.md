@@ -64,7 +64,9 @@ history start, and starts a Durable Object alarm. Each alarm drains up to nine
 due days at concurrency three, respecting the per-day gate. Success replaces the
 day transactionally (source edits and deletions included); rate limits and
 failures get a persisted `next_attempt_at`. Pause/resume are durable. The scan
-does not run inside a tool call and does not require the client to loop. Scans
+does not run inside a tool call and does not require the client to loop. A
+daily cron (`10 16 * * *`) enqueues only the gap up to yesterday and starts the
+same loop, so the index stays current without client traffic. Scans
 write D1 only: the read path opts out of the KV cache, so a multi-year backfill
 cannot consume the account-wide KV write quota. Work is capped at 100 days per
 UTC day and resumes at the next UTC midnight.

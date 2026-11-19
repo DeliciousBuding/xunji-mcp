@@ -40,6 +40,7 @@ Nutrition and body-data endpoints use separate vendor keys; this bridge does not
 ```bash
 npm install
 cp wrangler.example.jsonc wrangler.jsonc   # edit origin + KV ids
+npx wrangler types
 npx wrangler kv namespace create OAUTH_KV
 npx wrangler kv namespace create CACHE_KV
 printf 'owner-passphrase' | npx wrangler secret put OWNER_PASSPHRASE

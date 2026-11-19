@@ -40,6 +40,7 @@
 ```bash
 npm install
 cp wrangler.example.jsonc wrangler.jsonc   # 修改 origin 与 KV id
+npx wrangler types
 npx wrangler kv namespace create OAUTH_KV
 npx wrangler kv namespace create CACHE_KV
 printf 'owner-passphrase' | npx wrangler secret put OWNER_PASSPHRASE

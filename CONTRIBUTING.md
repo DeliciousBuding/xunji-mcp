@@ -18,6 +18,8 @@ surface area need a reason.
 
 ```bash
 npm install
+cp wrangler.example.jsonc wrangler.jsonc
+npx wrangler types
 npm run typecheck
 npm test
 ```

@@ -19,6 +19,10 @@ export interface DayReadOptions {
   full?: boolean;
   /** Skip the cache and read upstream again. */
   fresh?: boolean;
+  /** Read the hot-key cache (default true). Scans set this false. */
+  useCache?: boolean;
+  /** Write the hot-key cache (default true). Scans MUST set this false. */
+  persistCache?: boolean;
   /** How long this caller is willing to wait for the vendor pace. */
   maxWaitMs?: number;
   signal?: AbortSignal;
@@ -31,6 +35,8 @@ export type DayData = {
   limits?: XunjiLimits;
   cached: boolean;
   cacheAgeSeconds?: number;
+  /** True when the hot-key cache write was skipped by the daily budget. */
+  cacheDegraded?: boolean;
 };
 
 export type DayDeferred = {
@@ -48,7 +54,11 @@ export function gateKey(hash: string, datestr: string, full: boolean): string {
   return `${hash}:${datestr}:${full ? 'full' : 'light'}`;
 }
 
-function toDeferred(datestr: string, retryAfterSeconds: number, reason: DayDeferred['reason']): DayDeferred {
+function toDeferred(
+  datestr: string,
+  retryAfterSeconds: number,
+  reason: DayDeferred['reason'],
+): DayDeferred {
   return { status: 'deferred', datestr, retryAfterSeconds, reason };
 }
 
@@ -74,7 +84,7 @@ export async function readCachedDay(
 export async function readDay(env: Env, options: DayReadOptions): Promise<DayReadResult> {
   const full = options.full === true;
 
-  if (!options.fresh) {
+  if (!options.fresh && options.useCache !== false) {
     const cached = await readCachedDay(env, options.subject, options.datestr, full);
     if (cached) return cached;
   }
@@ -105,8 +115,19 @@ export async function readDay(env: Env, options: DayReadOptions): Promise<DayRea
 
   try {
     const { value, limits } = await readTrainDay(env, options.datestr, full, options.signal);
-    await putCachedDay(env, hash, options.datestr, full, value, limits);
-    return { status: 'data', datestr: options.datestr, response: value, limits, cached: false };
+    let cacheDegraded = false;
+    if (options.persistCache !== false) {
+      const cache = await putCachedDay(env, hash, options.datestr, full, value, limits);
+      cacheDegraded = cache.degraded;
+    }
+    return {
+      status: 'data',
+      datestr: options.datestr,
+      response: value,
+      limits,
+      cached: false,
+      ...(cacheDegraded ? { cacheDegraded: true } : {}),
+    };
   } catch (error) {
     if (error instanceof UpstreamError && error.code === 'rate_limited') {
       const retryAfter = error.retryAfterSeconds ?? minIntervalSeconds;
@@ -135,6 +156,8 @@ export interface RangeOptions {
   /** Maximum number of *uncached* upstream reads this call may perform. */
   maxUpstreamReads?: number;
   signal?: AbortSignal;
+  useCache?: boolean;
+  persistCache?: boolean;
 }
 
 export async function readRange(env: Env, options: RangeOptions): Promise<RangeReadResult> {
@@ -173,6 +196,8 @@ export async function readRange(env: Env, options: RangeOptions): Promise<RangeR
       full,
       maxWaitMs: remaining > 1 ? 16_000 : 8_000,
       signal: options.signal,
+      useCache: options.useCache,
+      persistCache: options.persistCache,
     });
 
     if (result.status === 'data') {

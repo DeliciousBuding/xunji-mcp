@@ -52,7 +52,10 @@ export function passphraseConfigured(env: Env): boolean {
 }
 
 export async function subjectFor(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`xunji-mcp:${value}`));
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`xunji-mcp:${value}`),
+  );
   return [...new Uint8Array(digest)]
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('')
@@ -73,7 +76,10 @@ export async function identityFromAccess(
   const token = request.headers.get('cf-access-jwt-assertion');
   if (!token) return null;
 
-  const team = env.ACCESS_TEAM_DOMAIN!.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const team = env
+    .ACCESS_TEAM_DOMAIN!.trim()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '');
   const issuer = `https://${team}`;
   try {
     const jwks = createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));

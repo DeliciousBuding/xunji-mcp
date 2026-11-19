@@ -14,10 +14,15 @@ MCP client (ChatGPT / Claude / Cursor …)
 │    /authorize  → our page: Access JWT or passphrase → consent → grant     │
 │                                                                           │
 │  /mcp → MCP SDK Streamable HTTP (stateless, JSON response)                │
-│    tools → normalize → cache (KV) → gate (DO) → Xunji Open API            │
+│    query tools → D1 index (SQL aggregation)                               │
+│    day reads   → normalize → cache (KV) → gate (DO) → Xunji Open API     │
+│    xunji_history → enqueue D1 scan_day → ScanCoordinator alarm loop       │
 │                                                                           │
-│  /healthz → booleans only                                                 │
+│  /healthz → booleans only        /admin/* → operator token, counts only   │
 └───────────────────────────────────────────────────────────────────────────┘
+        │ D1 (derived index, disposable)          │ alarm loop, resumable
+        ▼                                         ▼
+   session / movement / set_fact / scan_day   UpstreamGate → Xunji per day
                                    │ HTTPS, bearer XUNJI_API_KEY (Worker secret)
                                    ▼
         trains.xunjiapp.cn  (train + movement catalog)
@@ -40,38 +45,63 @@ Write flow (disabled by default): tool → confirmation check → payload
 validation → upstream upsert → replace the cached day with the server's
 standardized response. `dry_run` is never sent.
 
+## Data flow for an indexed query
+
+1. Tool arguments are narrowed to enums and bounded arrays.
+2. The query layer resolves the range (`all_time` starts at the configured
+   history start), then builds a fixed SQL expression set — no user SQL.
+3. SQLite aggregates `set_fact` rows into buckets, joins session durations, and
+   returns columnar rows plus totals.
+4. Coverage is read from `scan_day` in the same response, so an unscanned day is
+   never confused with a rest day.
+5. The text block carries a one-line summary; the data lives once in
+   `structuredContent`.
+
+## Backfill lifecycle
+
+`xunji_history action=backfill` inserts missing days into `scan_day`, sets the
+history start, and starts a Durable Object alarm. Each alarm drains up to nine
+due days at concurrency three, respecting the per-day gate. Success replaces the
+day transactionally (source edits and deletions included); rate limits and
+failures get a persisted `next_attempt_at`. Pause/resume are durable. The scan
+does not run inside a tool call and does not require the client to loop.
+
 ## Compatibility matrix
 
-| Surface | Supported | Notes |
-|---|---|---|
-| MCP Streamable HTTP | Yes | Stateless, JSON responses, `POST /mcp` only |
-| MCP SSE (old transport) | No | Not implemented |
-| OAuth 2.1 auth code + PKCE | Yes | S256 required for public clients |
-| Client ID Metadata Documents | Yes | Preferred; provider validates and caches |
-| Dynamic Client Registration | Yes | Kept for older clients |
-| Pre-registered client | Via `OAuthHelpers.createClient()` | Not exposed as an endpoint |
-| RFC 9728 protected resource metadata | Yes | Path-scoped document for `/mcp` |
-| RFC 8414 authorization server metadata | Yes | Includes revocation, S256, `iss` |
-| RFC 9207 `iss` | Yes | Present on success and error redirects |
-| RFC 8707 `resource` | Yes | Validated on authorize and token |
-| Refresh token rotation | Yes | `refreshTokenIdleTTL` 30 days |
-| Token revocation | Yes | `/oauth/token` revocation per RFC 7009 |
-| `offline_access` | Yes | Granted with consent |
-| ChatGPT connectors | Implemented against the current OAuth contract | Live connection status is reported separately; do not assume until the operator's own connection is verified |
-| Claude / Cursor / other MCP clients | Should work via CIMD or DCR | Not individually verified |
+| Surface                                | Supported                                      | Notes                                                                                                        |
+| -------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| MCP Streamable HTTP                    | Yes                                            | Stateless, JSON responses, `POST /mcp` only                                                                  |
+| MCP SSE (old transport)                | No                                             | Not implemented                                                                                              |
+| OAuth 2.1 auth code + PKCE             | Yes                                            | S256 required for public clients                                                                             |
+| Client ID Metadata Documents           | Yes                                            | Preferred; provider validates and caches                                                                     |
+| Dynamic Client Registration            | Yes                                            | Kept for older clients                                                                                       |
+| Pre-registered client                  | Via `OAuthHelpers.createClient()`              | Not exposed as an endpoint                                                                                   |
+| RFC 9728 protected resource metadata   | Yes                                            | Path-scoped document for `/mcp`                                                                              |
+| RFC 8414 authorization server metadata | Yes                                            | Includes revocation, S256, `iss`                                                                             |
+| RFC 9207 `iss`                         | Yes                                            | Present on success and error redirects                                                                       |
+| RFC 8707 `resource`                    | Yes                                            | Validated on authorize and token                                                                             |
+| Refresh token rotation                 | Yes                                            | `refreshTokenIdleTTL` 30 days                                                                                |
+| Token revocation                       | Yes                                            | `/oauth/token` revocation per RFC 7009                                                                       |
+| `offline_access`                       | Yes                                            | Granted with consent                                                                                         |
+| ChatGPT connectors                     | Implemented against the current OAuth contract | Live connection status is reported separately; do not assume until the operator's own connection is verified |
+| Claude / Cursor / other MCP clients    | Should work via CIMD or DCR                    | Not individually verified                                                                                    |
 
-## Tool surface (v0.1)
+## Tool surface (v0.2)
 
-| Tool | Mode | Bounds |
-|---|---|---|
-| `xunji_capabilities` | read | none |
-| `xunji_get_training_day` | read | one day |
-| `xunji_list_training_days` | read | ≤31 days, 2 uncached reads |
-| `xunji_movement_history` | read | ≤62 days, 2 uncached reads |
-| `xunji_training_stats` | read | ≤31 days, 2 uncached reads |
-| `xunji_search_movements` | read | catalog cached 7 days |
-| `xunji_list_plans` | read | none |
-| `xunji_get_plan` | read | ≤92 days |
+| Tool                        | Mode  | Bounds                                          |
+| --------------------------- | ----- | ----------------------------------------------- |
+| `xunji_capabilities`        | read  | none; live coverage matrix                      |
+| `xunji_training_overview`   | read  | one call over indexed history                   |
+| `xunji_query_training`      | read  | ≤20 years, ≤400 rows, ≤400 drill-down sets      |
+| `xunji_movement_progress`   | read  | ≤8 movements; bounded PR rows                   |
+| `xunji_history`             | index | backfill/refresh/pause/resume; ±20 years        |
+| `xunji_get_training_day`    | read  | one day                                         |
+| `xunji_list_training_days`  | read  | ≤31 days, 2 uncached reads                      |
+| `xunji_movement_history`    | read  | ≤62 days, 2 uncached reads                      |
+| `xunji_training_stats`      | read  | ≤31 days, 2 uncached reads                      |
+| `xunji_search_movements`    | read  | catalog cached 7 days                           |
+| `xunji_list_plans`          | read  | none                                            |
+| `xunji_get_plan`            | read  | ≤92 days                                        |
 | `xunji_upsert_training_day` | write | opt-in only; ≤15 movements × 20 sets; ±6 months |
 
 ## Deliberate omissions

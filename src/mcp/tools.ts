@@ -13,23 +13,15 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import { metaFor, putCachedDay, subjectHash } from '../cache';
-import {
-  aggregateStats,
-  movementHistory,
-  normalizeTrain,
-  summarizeDay,
-} from '../domain/normalize';
+import { aggregateStats, movementHistory, normalizeTrain, summarizeDay } from '../domain/normalize';
 import { addDays, todayInXunjiZone } from '../domain/date';
 import { readRange, readDay, enumerateDates } from '../service/day-read';
-import {
-  readMovementCatalog,
-  readPlan,
-  readPlanList,
-  UpstreamError,
-  upsertTrains,
-} from '../upstream/client';
+import { readMovementCatalog, readPlan, readPlanList, upsertTrains } from '../upstream/client';
 import type { AuthProps, Env, XunjiTrainResponse } from '../types';
 import { SCOPES } from '../types';
+import { failurePayload, jsonResult } from './result';
+import { budgetedCachePut } from '../kv-budget';
+import { registerQueryTools } from './query-tools';
 
 export interface ToolContext {
   env: Env;
@@ -44,7 +36,7 @@ const MAX_HISTORY_DAYS = 62;
 const isoDate = z
   .string()
   .regex(DATE_PATTERN, 'Use YYYY-MM-DD')
-  .describe('Calendar date in the user\'s Xunji timezone, e.g. 2026-11-18.');
+  .describe("Calendar date in the user's Xunji timezone, e.g. 2026-11-18.");
 
 function today(now = new Date()): string {
   return todayInXunjiZone(now);
@@ -52,32 +44,6 @@ function today(now = new Date()): string {
 
 function daysBetween(from: string, to: string): number {
   return enumerateDates(from, to).length;
-}
-
-/** Normalizes an upstream failure into a tool-visible error payload. */
-function failurePayload(error: unknown): { code: string; message: string; retryAfterSeconds?: number } {
-  if (error instanceof UpstreamError) {
-    const payload: { code: string; message: string; retryAfterSeconds?: number } = {
-      code: error.code,
-      message: error.message,
-    };
-    if (error.retryAfterSeconds !== undefined) payload.retryAfterSeconds = error.retryAfterSeconds;
-    return payload;
-  }
-  return { code: 'internal_error', message: 'The bridge could not complete this request.' };
-}
-
-export interface ToolOutcome {
-  payload: Record<string, unknown>;
-  isError?: boolean;
-}
-
-function jsonResult(payload: Record<string, unknown>, isError = false) {
-  return {
-    content: [{ type: 'text' as const, text: JSON.stringify(payload) }],
-    structuredContent: payload,
-    ...(isError ? { isError: true } : {}),
-  };
 }
 
 export function readToolsEnabled(env: Env): boolean {
@@ -99,10 +65,10 @@ export function hasScope(props: AuthProps, scope: string): boolean {
 export function buildServer(ctx: ToolContext): McpServer {
   const { env, props } = ctx;
   const server = new McpServer(
-    { name: 'xunji-mcp', version: '0.1.0' },
+    { name: 'xunji-mcp', version: '0.2.0' },
     {
       instructions: [
-        'Read-only access to the user\'s Xunji (训记) training records unless a write tool is explicitly present.',
+        "Read-only access to the user's Xunji (训记) training records unless a write tool is explicitly present.",
         'Dates are the calendar days stored by Xunji; pass them as YYYY-MM-DD.',
         'An empty day or range means nothing was recorded, not that the request failed.',
         'Respect `meta.upstream.readRateLimitSeconds` and `retryAfterSeconds` before retrying a day.',
@@ -114,62 +80,11 @@ export function buildServer(ctx: ToolContext): McpServer {
   const enabled = domains(env);
   const canRead = hasScope(props, SCOPES.read);
 
-  /* ---------------------------------------------------------------- */
-  /* Capabilities — always available; describes this deployment.       */
-  /* ---------------------------------------------------------------- */
+  registerQueryTools(server, ctx);
 
-  server.registerTool(
-    'xunji_capabilities',
-    {
-      title: 'Describe this Xunji bridge',
-      description:
-        'Reports which data domains this deployment exposes, whether write tools are enabled, the vendor rate-limit spacing, and the coverage limits of each tool. Call this first when you are unsure what is available.',
-      inputSchema: {},
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: false,
-      },
-    },
-    async () => {
-      const payload = {
-        server: 'xunji-mcp',
-        version: '0.1.0',
-        dataDomains: enabled,
-        writeToolsEnabled: readToolsEnabled(env) && canRead && hasScope(props, SCOPES.write),
-        scopes: props.scope,
-        coverage: {
-          training: {
-            tools: [
-              'xunji_get_training_day',
-              'xunji_list_training_days',
-              'xunji_movement_history',
-              'xunji_training_stats',
-              'xunji_search_movements',
-              'xunji_list_plans',
-              'xunji_get_plan',
-            ],
-            maxRangeDays: MAX_RANGE_DAYS,
-            maxHistoryDays: MAX_HISTORY_DAYS,
-          },
-          nutrition: { tools: [], note: 'Not exposed by this deployment.' },
-          body: { tools: [], note: 'Not exposed by this deployment.' },
-        },
-        limits: {
-          readRateLimitSeconds: 15,
-          readRateLimitFullSeconds: 30,
-          concurrentRangeReads: 2,
-        },
-        dataSource: 'Xunji Open API (train_open_api_v2), read through the operator\'s own key.',
-        notes: [
-          'No training recorded is a successful empty result.',
-          'Detail mode (include_full_data) exposes unchecked sets, RPE, notes and heart-rate summaries, and is rate limited at 30s per day.',
-        ],
-      };
-      return jsonResult(payload);
-    },
-  );
+  /* ---------------------------------------------------------------- */
+  /* Legacy per-day reads (kept for clients that connected before 0.2). */
+  /* ---------------------------------------------------------------- */
 
   if (!enabled.includes('train') || !canRead) {
     return server;
@@ -198,7 +113,7 @@ export function buildServer(ctx: ToolContext): McpServer {
         refresh: z
           .boolean()
           .default(false)
-          .describe('Bypass this bridge\'s cache and re-read upstream.'),
+          .describe("Bypass this bridge's cache and re-read upstream."),
       },
       annotations: {
         readOnlyHint: true,
@@ -259,8 +174,10 @@ export function buildServer(ctx: ToolContext): McpServer {
             trainCount: trains.length,
             movementCount: trains.reduce((sum, t) => sum + t.movementCount, 0),
             completedSetCount: trains.reduce((sum, t) => sum + t.completedSetCount, 0),
-            totalVolumeKg: Math.round(trains.reduce((sum, t) => sum + t.totalVolumeKg, 0) * 100) / 100,
-            durationMinutes: Math.round(trains.reduce((sum, t) => sum + (t.durationMinutes ?? 0), 0) * 10) / 10,
+            totalVolumeKg:
+              Math.round(trains.reduce((sum, t) => sum + t.totalVolumeKg, 0) * 100) / 100,
+            durationMinutes:
+              Math.round(trains.reduce((sum, t) => sum + (t.durationMinutes ?? 0), 0) * 10) / 10,
           },
           meta: metaFor({
             full,
@@ -290,7 +207,10 @@ export function buildServer(ctx: ToolContext): McpServer {
       inputSchema: {
         from: isoDate,
         to: isoDate,
-        refresh: z.boolean().default(false).describe('Re-read days from upstream instead of cache.'),
+        refresh: z
+          .boolean()
+          .default(false)
+          .describe('Re-read days from upstream instead of cache.'),
       },
       annotations: {
         readOnlyHint: true,
@@ -303,7 +223,10 @@ export function buildServer(ctx: ToolContext): McpServer {
       const span = daysBetween(from, to);
       if (span === 0) {
         return jsonResult(
-          { status: 'error', error: { code: 'invalid_range', message: '`to` must be on or after `from`.' } },
+          {
+            status: 'error',
+            error: { code: 'invalid_range', message: '`to` must be on or after `from`.' },
+          },
           true,
         );
       }
@@ -412,7 +335,9 @@ export function buildServer(ctx: ToolContext): McpServer {
           rows,
           occurrences: rows.length,
           matchedMovements: [...new Set(rows.map((row) => row.movementName))],
-          missingMovements: movements.filter((name) => !rows.some((row) => row.movementName === name)),
+          missingMovements: movements.filter(
+            (name) => !rows.some((row) => row.movementName === name),
+          ),
           deferred: range.deferred,
           pending: range.pending,
           meta: metaFor({ full: false, cached: range.upstreamReads === 0 }),
@@ -468,7 +393,9 @@ export function buildServer(ctx: ToolContext): McpServer {
           signal: ctx.signal,
         });
 
-        const stats = aggregateStats(range.days.map((day) => ({ date: day.datestr, response: day.response })));
+        const stats = aggregateStats(
+          range.days.map((day) => ({ date: day.datestr, response: day.response })),
+        );
         return jsonResult({
           status: 'ok',
           stats,
@@ -507,15 +434,16 @@ export function buildServer(ctx: ToolContext): McpServer {
       try {
         const cacheKey = 'movement_catalog:v1';
         let catalog = await env.CACHE_KV.get(cacheKey, 'json');
-        let cached = catalog !== null;
+        const cached = catalog !== null;
         if (!catalog) {
           const { value } = await readMovementCatalog(env, ctx.signal);
           catalog = value;
-          await env.CACHE_KV.put(cacheKey, JSON.stringify(value), { expirationTtl: 7 * 24 * 60 * 60 });
+          await budgetedCachePut(env, cacheKey, JSON.stringify(value), 7 * 24 * 60 * 60);
         }
 
-        const entries = (catalog as { movements?: Array<{ name: string; type?: string; aliases?: string[] }> })
-          .movements ?? [];
+        const entries =
+          (catalog as { movements?: Array<{ name: string; type?: string; aliases?: string[] }> })
+            .movements ?? [];
         const needle = query.trim().toLowerCase();
         const matches = entries
           .filter((entry) => {
@@ -525,7 +453,9 @@ export function buildServer(ctx: ToolContext): McpServer {
           })
           .slice(0, limit)
           .map((entry) => {
-            const row: { name: string; category?: string; aliases?: string[] } = { name: entry.name };
+            const row: { name: string; category?: string; aliases?: string[] } = {
+              name: entry.name,
+            };
             if (entry.type) row.category = entry.type;
             if (entry.aliases?.length) row.aliases = entry.aliases;
             return row;
@@ -583,9 +513,12 @@ export function buildServer(ctx: ToolContext): McpServer {
     {
       title: 'Read one official plan',
       description:
-        'Returns one official plan\'s schedule for a date window (default: 7 days back to 30 days forward, capped at 92 days). Pass `planRef` from `xunji_list_plans`. Read-only; never writes schedule changes.',
+        "Returns one official plan's schedule for a date window (default: 7 days back to 30 days forward, capped at 92 days). Pass `planRef` from `xunji_list_plans`. Read-only; never writes schedule changes.",
       inputSchema: {
-        planRef: z.string().min(1).describe('Plan reference from xunji_list_plans, e.g. "universal:4".'),
+        planRef: z
+          .string()
+          .min(1)
+          .describe('Plan reference from xunji_list_plans, e.g. "universal:4".'),
         from: isoDate.optional(),
         to: isoDate.optional(),
         includeMovements: z.boolean().default(true),
@@ -696,7 +629,13 @@ export function buildServer(ctx: ToolContext): McpServer {
       async ({ date, confirmed, clientRequestId, localid, title, movements }) => {
         if (confirmed !== true) {
           return jsonResult(
-            { status: 'error', error: { code: 'confirmation_required', message: 'Explicit user confirmation is required.' } },
+            {
+              status: 'error',
+              error: {
+                code: 'confirmation_required',
+                message: 'Explicit user confirmation is required.',
+              },
+            },
             true,
           );
         }
@@ -704,11 +643,17 @@ export function buildServer(ctx: ToolContext): McpServer {
         const today = new Date();
         const parsed = new Date(`${date}T00:00:00Z`);
         const sixMonths = 190 * 86_400_000;
-        if (Number.isNaN(parsed.getTime()) || Math.abs(parsed.getTime() - today.getTime()) > sixMonths) {
+        if (
+          Number.isNaN(parsed.getTime()) ||
+          Math.abs(parsed.getTime() - today.getTime()) > sixMonths
+        ) {
           return jsonResult(
             {
               status: 'error',
-              error: { code: 'date_out_of_range', message: 'Writes are accepted only within six months of today.' },
+              error: {
+                code: 'date_out_of_range',
+                message: 'Writes are accepted only within six months of today.',
+              },
             },
             true,
           );

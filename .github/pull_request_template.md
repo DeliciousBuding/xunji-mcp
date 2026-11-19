@@ -11,4 +11,3 @@
 - [ ] Write paths remain opt-in and never send `dry_run`
 
 ## Risk
-

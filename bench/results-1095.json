@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-11-19T08:58:45.711Z",
+  "dataset": {
+    "days": 1095,
+    "from": "2023-11-20",
+    "to": "2026-11-18",
+    "seedMs": 4052,
+    "note": "Synthetic; no real training data."
+  },
+  "v01": {
+    "approach": "xunji_list_training_days, 2 uncached days per call",
+    "calls": 548,
+    "upstreamReads": 1095,
+    "serializedBytes": 427906,
+    "tokensEstimate": 131449,
+    "estimatedLatencySeconds": 301,
+    "perCallPayloadBytes": 781
+  },
+  "v02": {
+    "overviewToolCalls": 1,
+    "overview": {
+      "bytes": 1444,
+      "tokens": 555,
+      "coldMs": 61,
+      "warmMs": 37
+    },
+    "monthlyQuery": {
+      "bytes": 2565,
+      "tokens": 985,
+      "rows": 37,
+      "coldMs": null
+    },
+    "indexQueries": 3
+  },
+  "comparison": {
+    "callReduction": "548x -> 1",
+    "byteReduction": "296.3x smaller",
+    "coverage": "complete"
+  }
+}

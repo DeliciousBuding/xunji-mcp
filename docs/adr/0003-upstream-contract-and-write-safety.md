@@ -11,18 +11,18 @@ conventional REST API in ways that must be encoded once, centrally.
 
 Verified on 2026-11-19 against the operator's own account:
 
-| Behavior | Observation |
-|---|---|
-| Success envelope | `{ res: {...} }`; `success` is absent on reads. |
-| Failure envelope | HTTP 200 with `{ success: false, res: "too frequent, retry after 30s" }` or `"apikey invalid"`. |
-| Compression | gzip at the transfer layer for larger replies; small ones are plain. |
-| Rate limit | Same key + same day: 15s light, 30s `include_full_data`. Different days are independent. |
-| Limits block | Returned in every train read (`limits.readRateLimitSecondsLight/Full`, write 45s). |
-| Write `dry_run` | **Ignored.** A request with `dry_run: true` created the record. |
-| Delete | No endpoint documented or observed. |
-| Catalog | `POST /api_movement_catalog_for_llm_v2` with `{}`; public, no key required. |
-| Plans | `POST /open/plan/query_gzip` on `api.xunjiapp.cn`, same key, `action: list|get`. |
-| Other domains | Body and food/nutrition endpoints require **separate keys**; the training key is rejected (`apikey invalid`). |
+| Behavior         | Observation                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| Success envelope | `{ res: {...} }`; `success` is absent on reads.                                                               |
+| Failure envelope | HTTP 200 with `{ success: false, res: "too frequent, retry after 30s" }` or `"apikey invalid"`.               |
+| Compression      | gzip at the transfer layer for larger replies; small ones are plain.                                          |
+| Rate limit       | Same key + same day: 15s light, 30s `include_full_data`. Different days are independent.                      |
+| Limits block     | Returned in every train read (`limits.readRateLimitSecondsLight/Full`, write 45s).                            |
+| Write `dry_run`  | **Ignored.** A request with `dry_run: true` created the record.                                               |
+| Delete           | No endpoint documented or observed.                                                                           |
+| Catalog          | `POST /api_movement_catalog_for_llm_v2` with `{}`; public, no key required.                                   |
+| Plans            | `POST /open/plan/query_gzip` on `api.xunjiapp.cn`, same key, actions `list` and `get`.                        |
+| Other domains    | Body and food/nutrition endpoints require **separate keys**; the training key is rejected (`apikey invalid`). |
 
 ## Decision
 

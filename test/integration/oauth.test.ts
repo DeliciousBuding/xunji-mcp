@@ -40,7 +40,8 @@ async function registerClient(): Promise<RegisteredClient> {
 }
 
 function cookieFrom(response: Response): string {
-  const list = typeof response.headers.getSetCookie === 'function' ? response.headers.getSetCookie() : [];
+  const list =
+    typeof response.headers.getSetCookie === 'function' ? response.headers.getSetCookie() : [];
   const single = list.length > 0 ? list : [response.headers.get('set-cookie') ?? ''];
   return single
     .filter(Boolean)
@@ -48,7 +49,11 @@ function cookieFrom(response: Response): string {
     .join('; ');
 }
 
-async function completeAuthFlow(): Promise<{ accessToken: string; refreshToken?: string; clientId: string }> {
+async function completeAuthFlow(): Promise<{
+  accessToken: string;
+  refreshToken?: string;
+  clientId: string;
+}> {
   const client = await registerClient();
   const verifier = 'verifier-'.padEnd(64, 'x');
   const challenge = await sha256Base64Url(verifier);
@@ -109,7 +114,11 @@ async function completeAuthFlow(): Promise<{ accessToken: string; refreshToken?:
   expect(tokenResponse.status).toBe(200);
   const token = (await tokenResponse.json()) as { access_token: string; refresh_token?: string };
   expect(token.access_token).toBeTruthy();
-  return { accessToken: token.access_token, refreshToken: token.refresh_token, clientId: client.client_id };
+  return {
+    accessToken: token.access_token,
+    refreshToken: token.refresh_token,
+    clientId: client.client_id,
+  };
 }
 
 async function mcpCall(token: string, body: Record<string, unknown>): Promise<Response> {
@@ -130,7 +139,8 @@ let upstreamReply: { body: unknown; status?: number; gzip?: boolean } | null = n
 beforeEach(() => {
   upstreamReply = null;
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const url =
+      typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (url.startsWith('https://trains.xunjiapp.cn') || url.startsWith('https://api.xunjiapp.cn')) {
       if (!upstreamReply) return new Response('no mock', { status: 500 });
       const payload = JSON.stringify(upstreamReply.body);
@@ -393,7 +403,10 @@ describe('MCP endpoint', () => {
       params: { name: 'xunji_get_training_day', arguments: { date: '2026-11-12' } },
     });
     const body = (await response.json()) as {
-      result?: { isError?: boolean; structuredContent?: { status?: string; reason?: string; retryAfterSeconds?: number } };
+      result?: {
+        isError?: boolean;
+        structuredContent?: { status?: string; reason?: string; retryAfterSeconds?: number };
+      };
     };
     expect(body.result?.isError).toBe(true);
     expect(body.result?.structuredContent?.status).toBe('deferred');
@@ -434,4 +447,3 @@ const FIXTURE_RES = {
     },
   ],
 };
-

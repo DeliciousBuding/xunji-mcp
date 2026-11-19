@@ -64,7 +64,10 @@ export class UpstreamGate extends DurableObject<Env> {
     const now = Date.now();
 
     if (state.cooldownUntil > now) {
-      return { status: 'cooldown', retryAfterSeconds: Math.ceil((state.cooldownUntil - now) / 1000) };
+      return {
+        status: 'cooldown',
+        retryAfterSeconds: Math.ceil((state.cooldownUntil - now) / 1000),
+      };
     }
 
     const earliest = state.lastAt + Math.max(0, minIntervalSeconds) * 1000;

@@ -38,9 +38,37 @@
           "type": "胸",
           "exetype": "weight",
           "sets": [
-            { "index": 1, "done": true, "weight": "20", "unit": "kg", "reps": "10", "time": 180, "timeLabel": "", "selfWeight": false },
-            { "index": 2, "done": true, "weight": "60", "unit": "kg", "reps": "8", "time": 90, "timeLabel": "", "selfWeight": false, "rpe": "8" },
-            { "index": 3, "done": false, "weight": "60", "unit": "kg", "reps": "8", "time": 90, "timeLabel": "", "selfWeight": false }
+            {
+              "index": 1,
+              "done": true,
+              "weight": "20",
+              "unit": "kg",
+              "reps": "10",
+              "time": 180,
+              "timeLabel": "",
+              "selfWeight": false
+            },
+            {
+              "index": 2,
+              "done": true,
+              "weight": "60",
+              "unit": "kg",
+              "reps": "8",
+              "time": 90,
+              "timeLabel": "",
+              "selfWeight": false,
+              "rpe": "8"
+            },
+            {
+              "index": 3,
+              "done": false,
+              "weight": "60",
+              "unit": "kg",
+              "reps": "8",
+              "time": 90,
+              "timeLabel": "",
+              "selfWeight": false
+            }
           ],
           "truncated": false,
           "note": "",
@@ -54,7 +82,16 @@
           "type": "背",
           "exetype": "weight",
           "sets": [
-            { "index": 1, "done": true, "weight": "", "unit": "kg", "reps": "8", "time": 60, "timeLabel": "", "selfWeight": true }
+            {
+              "index": 1,
+              "done": true,
+              "weight": "",
+              "unit": "kg",
+              "reps": "8",
+              "time": 60,
+              "timeLabel": "",
+              "selfWeight": true
+            }
           ],
           "truncated": false,
           "note": ""

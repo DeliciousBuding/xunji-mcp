@@ -60,14 +60,14 @@ Confirm the returned title/volume match the Xunji app. Then try
 
 ## Troubleshooting
 
-| Symptom | Likely cause |
-|---|---|
-| Connector reports "OAuth not supported" | AS metadata missing S256 or discovery path wrong; check `/.well-known/oauth-authorization-server` |
-| `invalid_redirect_uri` | The client reused a redirect URI not present in its registration/CIMD document |
-| Authorization page 403 with "Access did not provide an identity" | `/authorize` is not behind Access, or the JWT audience/team is misconfigured |
-| 401 after connecting | Token audience does not equal `PUBLIC_ORIGIN + /mcp`; check `PUBLIC_ORIGIN` |
-| `deferred` results | The vendor is pacing reads; wait `retryAfterSeconds` and retry |
-| Writes unavailable | Expected: `WRITE_TOOLS_ENABLED=false` by default |
+| Symptom                                                          | Likely cause                                                                                      |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Connector reports "OAuth not supported"                          | AS metadata missing S256 or discovery path wrong; check `/.well-known/oauth-authorization-server` |
+| `invalid_redirect_uri`                                           | The client reused a redirect URI not present in its registration/CIMD document                    |
+| Authorization page 403 with "Access did not provide an identity" | `/authorize` is not behind Access, or the JWT audience/team is misconfigured                      |
+| 401 after connecting                                             | Token audience does not equal `PUBLIC_ORIGIN + /mcp`; check `PUBLIC_ORIGIN`                       |
+| `deferred` results                                               | The vendor is pacing reads; wait `retryAfterSeconds` and retry                                    |
+| Writes unavailable                                               | Expected: `WRITE_TOOLS_ENABLED=false` by default                                                  |
 
 ## Revoking access
 

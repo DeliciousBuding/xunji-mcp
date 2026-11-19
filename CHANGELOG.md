@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.2.0 — 2026-11-19
+
+### Added
+
+- Derived D1 index for multi-year history and SQL aggregation.
+- `xunji_query_training`, `xunji_training_overview`,
+  `xunji_movement_progress`, `xunji_history`.
+- Resumable background backfill in a Durable Object alarm loop, with coverage,
+  retry backoff, source-edit/delete replacement and pause/resume.
+- Optional body and food adapters, registered only when their separate vendor
+  keys are configured.
+- Coverage matrix surfaced by `xunji_capabilities` (`configured`/`verified`).
+- Synthetic 1-year/3-year benchmark and quota guardrails.
+
+### Changed
+
+- Calendar dates are evaluated in `Asia/Shanghai`, not UTC.
+- Legacy bounded tools remain for 0.1 clients; new integrations use the query
+  tools.
+- Query tools return compact columnar data in `structuredContent` and a short
+  summary in text, instead of duplicating JSON.
+
+### Fixed
+
+- Historical reads no longer write KV; only today/yesterday use a hot-key cache.
+- Scan path performs zero KV writes and respects a 100-day/day scan budget.
+- KV writes are capped at 300/day for this deployment, leaving room for other
+  Workers on the account.
+- Official plan default window follows the vendor contract (-7d to +30d).
+
 ## 0.1.0 — 2026-11-19
 
 Initial release.

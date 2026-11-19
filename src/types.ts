@@ -35,6 +35,10 @@ export interface Env {
   OAUTH_KV: KVNamespace;
   CACHE_KV: KVNamespace;
   UPSTREAM_GATE: DurableObjectNamespace<import('./gate').UpstreamGate>;
+  /** Optional derived index. Without it, only bounded on-demand reads work. */
+  DB?: D1Database;
+  /** Background history scanner. */
+  SCAN_COORDINATOR?: DurableObjectNamespace<import('./index/scan-coordinator').ScanCoordinator>;
 
   /** Injected by @cloudflare/workers-oauth-provider on the default handler path. */
   OAUTH_PROVIDER: import('@cloudflare/workers-oauth-provider').OAuthHelpers;
@@ -45,6 +49,10 @@ export interface Env {
   ENABLED_DATA_DOMAINS: string;
   WRITE_TOOLS_ENABLED: string;
   UPSTREAM_TIMEOUT_MS: string;
+  /** Daily KV write cap for the hot-key cache. Defaults to 300. */
+  KV_WRITE_DAILY_BUDGET?: string;
+  /** Maximum history days scanned per UTC day. Defaults to 100. */
+  SCAN_DAILY_LIMIT?: string;
 
   /** Cloudflare Access team domain, e.g. `team.cloudflareaccess.com`. */
   ACCESS_TEAM_DOMAIN?: string;
@@ -58,9 +66,19 @@ export interface Env {
    * `wrangler secret put XUNJI_API_KEY` — never a var, never logged.
    */
   XUNJI_API_KEY?: string;
+  /** Optional body-data key (xjbody_*). Tools register only when present. */
+  XUNJI_BODY_KEY?: string;
+  /** Optional food-record key (xjfood_*). */
+  XUNJI_FOOD_KEY?: string;
+  /** Optional food-search key from the official food skill. */
+  XUNJI_FOOD_SEARCH_KEY?: string;
+  /** Optional default start for the derived history index. */
+  HISTORY_START_DATE?: string;
 
   /** Optional: shared secret for the /healthz deployment probe. */
   HEALTH_TOKEN?: string;
+  /** Optional: operator token for /admin index controls. */
+  ADMIN_TOKEN?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -246,6 +264,8 @@ export interface UpstreamMeta {
   /** Populated on this upstream's soft rate-limit replies. */
   retryAfterSeconds?: number;
   upstreamTruncated?: boolean;
+  /** True when the hot-key KV cache write was skipped by the daily budget. */
+  budgetDegraded?: boolean;
 }
 
 export interface ToolResultMeta {

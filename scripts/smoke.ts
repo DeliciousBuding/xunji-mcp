@@ -43,14 +43,18 @@ async function json(url: string): Promise<{ response: Response; body: any }> {
 const health = await json(`${BASE}/healthz`);
 record(
   'healthz',
-  health.response.ok && health.body?.status === 'ok' && health.body?.configured?.upstreamKey === true,
+  health.response.ok &&
+    health.body?.status === 'ok' &&
+    health.body?.configured?.upstreamKey === true,
   `identityMode=${health.body?.identityMode} upstreamKey=${health.body?.configured?.upstreamKey}`,
 );
 
 const prm = await json(`${BASE}/.well-known/oauth-protected-resource/mcp`);
 record(
   'protected resource metadata',
-  prm.response.ok && prm.body?.resource === resource && Array.isArray(prm.body?.authorization_servers),
+  prm.response.ok &&
+    prm.body?.resource === resource &&
+    Array.isArray(prm.body?.authorization_servers),
   `resource=${prm.body?.resource}`,
 );
 
@@ -72,7 +76,9 @@ const unauthenticated = await fetch(resource, {
 const challenge = unauthenticated.headers.get('www-authenticate') ?? '';
 record(
   '401 challenge',
-  unauthenticated.status === 401 && challenge.includes('resource_metadata=') && challenge.includes('xunji:read'),
+  unauthenticated.status === 401 &&
+    challenge.includes('resource_metadata=') &&
+    challenge.includes('xunji:read'),
   `status=${unauthenticated.status}`,
 );
 
@@ -120,66 +126,68 @@ if (withOauth) {
         : `HTTP ${page.status}; complete the flow in a browser`,
     );
   } else {
-  const html = await page.text();
-  const handle = /name="handle" value="([^"]+)"/.exec(html)?.[1];
-  const cookie = (page.headers.getSetCookie?.() ?? [])
-    .map((value) => value.split(';')[0])
-    .join('; ');
-  record('authorization page', page.ok && Boolean(handle));
+    const html = await page.text();
+    const handle = /name="handle" value="([^"]+)"/.exec(html)?.[1];
+    const cookie = (page.headers.getSetCookie?.() ?? [])
+      .map((value) => value.split(';')[0])
+      .join('; ');
+    record('authorization page', page.ok && Boolean(handle));
 
-  if (handle) {
-    const form = new URLSearchParams({
-      handle,
-      decision: 'approve',
-      scope: 'xunji:read',
-      passphrase,
-    });
-    const approved = await fetch(`${BASE}/authorize`, {
-      method: 'POST',
-      redirect: 'manual',
-      headers: { cookie, 'content-type': 'application/x-www-form-urlencoded', ...authHeaders },
-      body: form,
-    });
-    const location = approved.headers.get('location') ?? '';
-    const code = location.includes('code=') ? new URL(location).searchParams.get('code') : null;
-    record('consent approval', approved.status === 302 && Boolean(code));
-
-    if (code) {
-      const tokenResponse = await fetch(`${BASE}/oauth/token`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: 'https://client.example.com/cb',
-          client_id: client.client_id,
-          code_verifier: verifier,
-          resource,
-        }),
+    if (handle) {
+      const form = new URLSearchParams({
+        handle,
+        decision: 'approve',
+        scope: 'xunji:read',
+        passphrase,
       });
-      const token: any = await tokenResponse.json();
-      record('token exchange', tokenResponse.ok && Boolean(token.access_token));
+      const approved = await fetch(`${BASE}/authorize`, {
+        method: 'POST',
+        redirect: 'manual',
+        headers: { cookie, 'content-type': 'application/x-www-form-urlencoded', ...authHeaders },
+        body: form,
+      });
+      const location = approved.headers.get('location') ?? '';
+      const code = location.includes('code=') ? new URL(location).searchParams.get('code') : null;
+      record('consent approval', approved.status === 302 && Boolean(code));
 
-      if (token.access_token) {
-        const list = await fetch(resource, {
+      if (code) {
+        const tokenResponse = await fetch(`${BASE}/oauth/token`, {
           method: 'POST',
-          headers: {
-            authorization: `Bearer ${token.access_token}`,
-            'content-type': 'application/json',
-            accept: 'application/json, text/event-stream',
-          },
-          body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }),
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: 'https://client.example.com/cb',
+            client_id: client.client_id,
+            code_verifier: verifier,
+            resource,
+          }),
         });
-        const body: any = await list.json().catch(() => null);
-        const names = (body?.result?.tools ?? []).map((tool: { name: string }) => tool.name);
-        record(
-          'authenticated tools/list',
-          list.ok && names.includes('xunji_get_training_day') && !names.includes('xunji_upsert_training_day'),
-          `${names.length} tools, read-only`,
-        );
+        const token: any = await tokenResponse.json();
+        record('token exchange', tokenResponse.ok && Boolean(token.access_token));
+
+        if (token.access_token) {
+          const list = await fetch(resource, {
+            method: 'POST',
+            headers: {
+              authorization: `Bearer ${token.access_token}`,
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream',
+            },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }),
+          });
+          const body: any = await list.json().catch(() => null);
+          const names = (body?.result?.tools ?? []).map((tool: { name: string }) => tool.name);
+          record(
+            'authenticated tools/list',
+            list.ok &&
+              names.includes('xunji_get_training_day') &&
+              !names.includes('xunji_upsert_training_day'),
+            `${names.length} tools, read-only`,
+          );
+        }
       }
     }
-  }
   }
 }
 

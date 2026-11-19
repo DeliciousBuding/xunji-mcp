@@ -1,7 +1,26 @@
 {
   "name": "xunji-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Self-hosted, agent-native MCP bridge for Xunji (训记) training data, deployable on Cloudflare Workers with OAuth 2.1.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "xunji",
+    "训记",
+    "cloudflare-workers",
+    "oauth2",
+    "agent",
+    "chatgpt"
+  ],
+  "homepage": "https://github.com/DeliciousBuding/xunji-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/DeliciousBuding/xunji-mcp/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DeliciousBuding/xunji-mcp.git"
+  },
+  "author": "DeliciousBuding",
   "license": "MIT",
   "type": "module",
   "private": true,
@@ -12,11 +31,17 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "cf-typegen": "wrangler types",
-    "smoke": "node --experimental-strip-types scripts/smoke.ts"
+    "secret-scan": "node scripts/secret-scan.mjs --history",
+    "smoke": "node --experimental-strip-types scripts/smoke.ts",
+    "bench": "node bench/run.mjs"
   },
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "^1.2.4",
@@ -26,8 +51,14 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.23.0",
+    "@eslint/js": "^9.39.1",
     "@types/node": "^24.9.2",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "gpt-tokenizer": "^3.4.0",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2",
     "vitest": "^4.1.12",
     "wrangler": "^4.127.1"
   }

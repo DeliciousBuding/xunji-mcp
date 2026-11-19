@@ -24,10 +24,11 @@ import {
   type OperatorIdentity,
 } from './auth/identity';
 import { buildServer } from './mcp/tools';
+import { handleAdmin } from './admin';
 import type { AuthProps, Env } from './types';
 import { SCOPES } from './types';
 
-const SERVER_INFO = { name: 'xunji-mcp', version: '0.1.0' } as const;
+const SERVER_INFO = { name: 'xunji-mcp', version: '0.2.0' } as const;
 
 function writeEnabled(env: Env): boolean {
   return (env.WRITE_TOOLS_ENABLED ?? '').toLowerCase() === 'true';
@@ -51,11 +52,7 @@ export function requestedScopes(env: Env, requested: string[] | undefined): stri
 /* ------------------------------------------------------------------ */
 
 export const mcpHandler = {
-  async fetch(
-    request: Request,
-    env: Env,
-    ctx: ExecutionContext,
-  ): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (request.method !== 'POST') {
       return Response.json(
         { jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null },
@@ -78,9 +75,25 @@ export const mcpHandler = {
       maxRequestBodySize: 32 * 1024,
     });
 
+    const requestClone = request.clone();
+    const requestText = await requestClone.text();
+    const method = /"method"\s*:\s*"([^"]+)"/.exec(requestText)?.[1] ?? 'unknown';
+
     await server.connect(transport);
     try {
-      return await transport.handleRequest(request);
+      const response = await transport.handleRequest(request);
+      if (method === 'tools/list') {
+        try {
+          const body = (await response.clone().json()) as {
+            result?: { tools?: Array<{ name: string }> };
+          };
+          const names = (body.result?.tools ?? []).map((tool) => tool.name);
+          console.warn('tools_list', names.length, names.join(','));
+        } catch {
+          console.warn('tools_list', 'unparsed');
+        }
+      }
+      return response;
     } finally {
       await transport.close();
       await server.close();
@@ -173,7 +186,10 @@ export async function handleAuthorize(request: Request, env: Env): Promise<Respo
       const denied = await oauth.denyConsent(request, handle);
       return new Response(null, { status: 302, headers: denied.headers });
     } catch {
-      return renderAuthorizeError('This consent request expired. Start again from your MCP client.', 400);
+      return renderAuthorizeError(
+        'This consent request expired. Start again from your MCP client.',
+        400,
+      );
     }
   }
 
@@ -228,6 +244,8 @@ export function handleHealth(env: Env): Response {
       upstreamKey: Boolean(env.XUNJI_API_KEY),
       operatorGate: mode !== 'none',
       allowlistEntries: (env.ALLOWED_USER_EMAILS ?? '').split(',').filter(Boolean).length,
+      index: Boolean(env.DB),
+      scanner: Boolean(env.SCAN_COORDINATOR),
     },
     writeToolsEnabled: writeEnabled(env),
   };
@@ -245,6 +263,7 @@ const defaultHandler = {
     const url = new URL(request.url);
 
     if (url.pathname === '/healthz') return handleHealth(env);
+    if (url.pathname.startsWith('/admin/')) return handleAdmin(request, env);
     if (url.pathname === '/authorize') return handleAuthorize(request, env);
 
     if (url.pathname === '/' || url.pathname === '') {
@@ -319,3 +338,4 @@ export default {
 } satisfies ExportedHandler<Env>;
 
 export { UpstreamGate } from './gate';
+export { ScanCoordinator } from './index/scan-coordinator';

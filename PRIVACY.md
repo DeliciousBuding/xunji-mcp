@@ -5,12 +5,12 @@ data path. There is no upstream service operated by this project.
 
 ## What is stored
 
-| Data | Location | Lifetime |
-|---|---|---|
-| OAuth clients, grants, access/refresh tokens (hashed) | Cloudflare KV (`OAUTH_KV`) | Access 1h; refresh 30 days idle; clients 90 days |
-| Normalized training days | Cloudflare KV (`CACHE_KV`), keyed by a hashed subject | 60s (today), 15m (future), 6h (past) |
-| Rate-limit timestamps | Durable Object storage | Until overwritten |
-| Cloudflare request logs | Cloudflare | Per plan/retention setting |
+| Data                                                  | Location                                              | Lifetime                                         |
+| ----------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------ |
+| OAuth clients, grants, access/refresh tokens (hashed) | Cloudflare KV (`OAUTH_KV`)                            | Access 1h; refresh 30 days idle; clients 90 days |
+| Normalized training days                              | Cloudflare KV (`CACHE_KV`), keyed by a hashed subject | 60s (today), 15m (future), 6h (past)             |
+| Rate-limit timestamps                                 | Durable Object storage                                | Until overwritten                                |
+| Cloudflare request logs                               | Cloudflare                                            | Per plan/retention setting                       |
 
 The bridge does **not** store the Xunji account key in KV, D1, logs or token
 props. It lives only as a Worker secret.

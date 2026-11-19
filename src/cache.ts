@@ -7,16 +7,31 @@
  */
 
 import { todayInXunjiZone } from './domain/date';
+import { budgetedCachePut } from './kv-budget';
 import type { Env, ToolResultMeta, XunjiLimits, XunjiTrainResponse } from './types';
 
 const CACHE_VERSION = 'v1';
 
-/** Freshness policy. Completed days are stable; today is still being written. */
+/**
+ * Freshness policy, deliberately small.
+ *
+ * Cloudflare's free KV allowance is shared by every namespace on the account
+ * and is write-bound (1,000/day). Historical training days are served from D1,
+ * so they are never cached in KV; only today/yesterday get a short hot-key
+ * cache. A zero means "do not write this to KV".
+ */
 export function cacheTtlSeconds(datestr: string, now = new Date()): number {
   const today = todayInXunjiZone(now);
-  if (datestr < today) return 6 * 60 * 60;
-  if (datestr === today) return 60;
-  return 15 * 60;
+  const yesterday = new Date(Date.parse(`${today}T00:00:00Z`) - 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  if (datestr === today) return 5 * 60;
+  if (datestr === yesterday) return 2 * 60;
+  return 0;
+}
+
+export function isCacheEligible(datestr: string, now = new Date()): boolean {
+  return cacheTtlSeconds(datestr, now) > 0;
 }
 
 /** Stable, non-reversible cache identity for a subject. */
@@ -62,11 +77,11 @@ export async function putCachedDay(
   full: boolean,
   response: XunjiTrainResponse,
   limits?: XunjiLimits,
-): Promise<void> {
+): Promise<{ stored: boolean; degraded: boolean }> {
+  const ttl = cacheTtlSeconds(datestr);
+  if (ttl <= 0) return { stored: false, degraded: false };
   const entry: CachedDay = { at: Date.now(), datestr, response, limits };
-  await env.CACHE_KV.put(dayKey(hash, datestr, full), JSON.stringify(entry), {
-    expirationTtl: Math.max(60, cacheTtlSeconds(datestr) * 2),
-  });
+  return budgetedCachePut(env, dayKey(hash, datestr, full), JSON.stringify(entry), ttl);
 }
 
 /** Builds the meta block every read tool returns. */
@@ -77,6 +92,7 @@ export function metaFor(options: {
   limits?: XunjiLimits;
   retryAfterSeconds?: number;
   upstreamTruncated?: boolean;
+  budgetDegraded?: boolean;
 }): ToolResultMeta {
   const meta: ToolResultMeta = {
     upstream: {
@@ -84,9 +100,12 @@ export function metaFor(options: {
       cached: options.cached,
     },
   };
-  if (options.cacheAgeSeconds !== undefined) meta.upstream.cacheAgeSeconds = options.cacheAgeSeconds;
+  if (options.cacheAgeSeconds !== undefined)
+    meta.upstream.cacheAgeSeconds = options.cacheAgeSeconds;
   if (options.limits) meta.limits = options.limits;
-  if (options.retryAfterSeconds !== undefined) meta.upstream.retryAfterSeconds = options.retryAfterSeconds;
+  if (options.retryAfterSeconds !== undefined)
+    meta.upstream.retryAfterSeconds = options.retryAfterSeconds;
   if (options.upstreamTruncated) meta.upstream.upstreamTruncated = true;
+  if (options.budgetDegraded) meta.upstream.budgetDegraded = true;
   return meta;
 }

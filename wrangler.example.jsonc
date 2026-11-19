@@ -6,7 +6,7 @@
   "compatibility_flags": ["global_fetch_strictly_public"],
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1
+    "head_sampling_rate": 1,
   },
   "vars": {
     "PUBLIC_ORIGIN": "https://exercise.example.com",
@@ -14,36 +14,54 @@
     "ALLOWED_USER_EMAILS": "",
     "ENABLED_DATA_DOMAINS": "train",
     "WRITE_TOOLS_ENABLED": "false",
-    "UPSTREAM_TIMEOUT_MS": "15000"
+    "UPSTREAM_TIMEOUT_MS": "15000",
+    "KV_WRITE_DAILY_BUDGET": "300",
+    "SCAN_DAILY_LIMIT": "100",
   },
   "kv_namespaces": [
     {
       "binding": "OAUTH_KV",
-      "id": "REPLACE_WITH_OAUTH_KV_ID"
+      "id": "REPLACE_WITH_OAUTH_KV_ID",
     },
     {
       "binding": "CACHE_KV",
-      "id": "REPLACE_WITH_CACHE_KV_ID"
-    }
+      "id": "REPLACE_WITH_CACHE_KV_ID",
+    },
   ],
   "durable_objects": {
     "bindings": [
       {
         "name": "UPSTREAM_GATE",
-        "class_name": "UpstreamGate"
-      }
-    ]
+        "class_name": "UpstreamGate",
+      },
+      {
+        "name": "SCAN_COORDINATOR",
+        "class_name": "ScanCoordinator",
+      },
+    ],
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["UpstreamGate"]
-    }
+      "new_sqlite_classes": ["UpstreamGate"],
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["ScanCoordinator"],
+    },
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "xunji-mcp-index",
+      "database_id": "REPLACE_WITH_D1_ID",
+      "migrations_dir": "migrations",
+    },
   ],
   "routes": [
     {
       "pattern": "exercise.example.com",
-      "custom_domain": true
-    }
-  ]
+      "custom_domain": true,
+    },
+  ],
 }

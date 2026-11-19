@@ -119,7 +119,8 @@ export function renderAuthorizeError(message: string, status: number): Response 
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store',
       'x-frame-options': 'DENY',
-      'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+      'content-security-policy':
+        "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
       'referrer-policy': 'no-referrer',
     },
   });

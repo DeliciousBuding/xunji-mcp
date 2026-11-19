@@ -14,8 +14,20 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = process.cwd();
-const SKIP_DIRS = new Set(['node_modules', '.git', '.wrangler', 'dist', 'coverage', '.wrangler-dry']);
-const SKIP_FILES = new Set(['wrangler.jsonc', 'worker-configuration.d.ts', '.dev.vars', 'package-lock.json']);
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  '.wrangler',
+  'dist',
+  'coverage',
+  '.wrangler-dry',
+]);
+const SKIP_FILES = new Set([
+  'wrangler.jsonc',
+  'worker-configuration.d.ts',
+  '.dev.vars',
+  'package-lock.json',
+]);
 const SKIP_EXT = /\.(png|jpg|jpeg|gif|webp|ico|woff2?|ttf|zip|gz|tgz)$/i;
 
 const PATTERNS = [
@@ -35,7 +47,10 @@ const PATTERNS = [
     name: 'private deployment domain',
     re: new RegExp('\\b[A-Za-z0-9-]+\\.' + 'delicious233' + '\\.com\\b', 'gi'),
   },
-  { name: 'personal email', re: /\b[A-Za-z0-9._%+-]+@(?!example\.(?:com|org|net)\b)[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g },
+  {
+    name: 'personal email',
+    re: /\b[A-Za-z0-9._%+-]+@(?!example\.(?:com|org|net)\b)[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
+  },
   { name: 'bearer literal', re: /\bBearer\s+[A-Za-z0-9._~+/-]{24,}=*\b/g },
 ];
 

@@ -27,15 +27,28 @@ Before exposing an instance publicly:
 
 ## Secrets that must never be committed
 
-| Secret | Storage |
-|---|---|
-| `XUNJI_API_KEY` | `wrangler secret put XUNJI_API_KEY` |
-| `OWNER_PASSPHRASE` | `wrangler secret put OWNER_PASSPHRASE` |
-| `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` | Worker secret or private vars |
-| Cloudflare API token | local environment only |
+| Secret                              | Storage                                |
+| ----------------------------------- | -------------------------------------- |
+| `XUNJI_API_KEY`                     | `wrangler secret put XUNJI_API_KEY`    |
+| `OWNER_PASSPHRASE`                  | `wrangler secret put OWNER_PASSPHRASE` |
+| `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` | Worker secret or private vars          |
+| `ADMIN_TOKEN` (optional `/admin/*`) | Worker secret                          |
+| Cloudflare API token                | local environment only                 |
 
 `.gitignore` excludes `wrangler.jsonc`, `.dev.vars`, `.env*` and `.local/`.
 A CI secret scan runs on every push.
+
+## Quota isolation
+
+The free Workers KV allowance is account-wide and write-bound. This project does
+not spend it on historical reads:
+
+- Scans write D1 only and are capped at `SCAN_DAILY_LIMIT` (default 100) days per
+  UTC day.
+- KV is a hot-key cache for today/yesterday, capped at
+  `KV_WRITE_DAILY_BUDGET` (default 300) writes/day.
+- `/admin/*` and `xunji_history` report the counters; over-budget writes are
+  skipped and marked `budgetDegraded`.
 
 ## What the bridge does not do
 

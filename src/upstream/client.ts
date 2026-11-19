@@ -143,7 +143,9 @@ export async function postJson<T>(
   env: Env,
   url: string,
   body: unknown,
-  opts: { authRequired: boolean; signal?: AbortSignal; timeoutMs?: number } = { authRequired: true },
+  opts: { authRequired: boolean; signal?: AbortSignal; timeoutMs?: number; key?: string } = {
+    authRequired: true,
+  },
 ): Promise<{ value: T; limits?: XunjiLimits }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? timeoutMs(env));
@@ -156,7 +158,7 @@ export async function postJson<T>(
     'accept-encoding': 'gzip',
     'user-agent': 'xunji-mcp/0.1 (+https://github.com/)',
   };
-  if (opts.authRequired) headers.authorization = `Bearer ${apiKey(env)}`;
+  if (opts.authRequired) headers.authorization = `Bearer ${opts.key?.trim() || apiKey(env)}`;
 
   let response: Response;
   try {
@@ -168,7 +170,7 @@ export async function postJson<T>(
       redirect: 'follow',
       cf: { cacheTtl: 0 },
     });
-  } catch (error) {
+  } catch {
     if (controller.signal.aborted) {
       throw new UpstreamError('timeout', 'Xunji did not answer in time.');
     }
@@ -179,7 +181,12 @@ export async function postJson<T>(
   }
 
   if (response.status === 401 || response.status === 403) {
-    throw new UpstreamError('unauthorized', 'Xunji rejected this deployment\'s credentials.', undefined, response.status);
+    throw new UpstreamError(
+      'unauthorized',
+      "Xunji rejected this deployment's credentials.",
+      undefined,
+      response.status,
+    );
   }
   if (!response.ok) {
     throw new UpstreamError(
@@ -207,7 +214,10 @@ export async function postJson<T>(
     throw classifyFailure(envelope);
   }
   if (envelope.error && typeof envelope.error !== 'string' && envelope.error.message) {
-    throw new UpstreamError('invalid_request', `Xunji rejected the request: ${envelope.error.code ?? 'invalid'}.`);
+    throw new UpstreamError(
+      'invalid_request',
+      `Xunji rejected the request: ${envelope.error.code ?? 'invalid'}.`,
+    );
   }
   const res = envelope.res;
   if (typeof res === 'string') {
@@ -282,7 +292,10 @@ export interface MovementCatalogEntry {
 export async function readMovementCatalog(
   env: Env,
   signal?: AbortSignal,
-): Promise<{ value: { schema?: string; version?: number; movements: MovementCatalogEntry[] }; limits?: XunjiLimits }> {
+): Promise<{
+  value: { schema?: string; version?: number; movements: MovementCatalogEntry[] };
+  limits?: XunjiLimits;
+}> {
   return postJson(
     env,
     `${UPSTREAM.trainsBase}${UPSTREAM.catalogPath}`,

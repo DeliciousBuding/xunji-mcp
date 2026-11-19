@@ -55,7 +55,8 @@ afterEach(() => {
 
 function stubUpstream(reply: unknown, captured: { body?: string } = {}) {
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const url =
+      typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (url.includes('/api_upsert_trains_for_llm_v2')) {
       captured.body = typeof init?.body === 'string' ? init.body : '';
       return Response.json(reply);
@@ -84,7 +85,10 @@ const validWrite = {
 
 describe('write tool gating', () => {
   it('is not registered when WRITE_TOOLS_ENABLED is false', async () => {
-    const server = buildServer({ env: testEnv({ WRITE_TOOLS_ENABLED: 'false' }), props: writeProps });
+    const server = buildServer({
+      env: testEnv({ WRITE_TOOLS_ENABLED: 'false' }),
+      props: writeProps,
+    });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     const client = new Client({ name: 'vitest', version: '0.0.0' });
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
@@ -113,7 +117,9 @@ describe('write tool payload', () => {
       {
         res: {
           datestr: '2026-11-18',
-          trains: [{ localid: 200000000002, datestr: '2026-11-18', title: '合成写入', movements: [] }],
+          trains: [
+            { localid: 200000000002, datestr: '2026-11-18', title: '合成写入', movements: [] },
+          ],
         },
       },
       captured,
@@ -175,10 +181,15 @@ describe('write tool payload', () => {
       },
       captured,
     );
-    await callTool(testEnv({ WRITE_TOOLS_ENABLED: 'true' }), writeProps, 'xunji_upsert_training_day', {
-      ...validWrite,
-      localid: 123456,
-    });
+    await callTool(
+      testEnv({ WRITE_TOOLS_ENABLED: 'true' }),
+      writeProps,
+      'xunji_upsert_training_day',
+      {
+        ...validWrite,
+        localid: 123456,
+      },
+    );
     const sent = JSON.parse(captured.body ?? '{}') as { res: Array<Record<string, unknown>> };
     expect(sent.res[0]!.localid).toBe(123456);
   });

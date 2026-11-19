@@ -40,16 +40,22 @@ function parseNote(note: string | undefined): {
       const parsed = JSON.parse(trimmed) as Record<string, unknown>;
       const hr = parsed.heartRate;
       return {
-        text: typeof parsed.text === 'string' && parsed.text.trim() ? parsed.text.trim() : undefined,
+        text:
+          typeof parsed.text === 'string' && parsed.text.trim() ? parsed.text.trim() : undefined,
         calories: toNumber(parsed.calorie as number | undefined),
         color: typeof parsed.trainColor === 'string' ? parsed.trainColor : null,
         heartRate:
           hr && typeof hr === 'object'
             ? {
-                avg: toNumber((hr as Record<string, unknown>).avg as number | undefined) ?? undefined,
-                max: toNumber((hr as Record<string, unknown>).max as number | undefined) ?? undefined,
-                min: toNumber((hr as Record<string, unknown>).min as number | undefined) ?? undefined,
-                samples: toNumber((hr as Record<string, unknown>).count as number | undefined) ?? undefined,
+                avg:
+                  toNumber((hr as Record<string, unknown>).avg as number | undefined) ?? undefined,
+                max:
+                  toNumber((hr as Record<string, unknown>).max as number | undefined) ?? undefined,
+                min:
+                  toNumber((hr as Record<string, unknown>).min as number | undefined) ?? undefined,
+                samples:
+                  toNumber((hr as Record<string, unknown>).count as number | undefined) ??
+                  undefined,
               }
             : undefined,
       };
@@ -119,7 +125,8 @@ function normalizeMovement(movement: XunjiMovement, fallbackIndex: number): Norm
     if (set.done) {
       totalVolumeKg += effectiveWeight(set) * (set.reps ?? 0);
       if (set.weight !== null && set.weight !== undefined) {
-        topSetWeightKg = topSetWeightKg === null ? set.weight : Math.max(topSetWeightKg, set.weight);
+        topSetWeightKg =
+          topSetWeightKg === null ? set.weight : Math.max(topSetWeightKg, set.weight);
       }
     }
   }
@@ -157,7 +164,10 @@ function normalizeMovement(movement: XunjiMovement, fallbackIndex: number): Norm
   return normalized;
 }
 
-export function normalizeTrain(train: XunjiTrain, options: { includeNotes?: boolean } = {}): NormalizedTrain {
+export function normalizeTrain(
+  train: XunjiTrain,
+  options: { includeNotes?: boolean } = {},
+): NormalizedTrain {
   const movements = (train.movements ?? []).map((m, i) => normalizeMovement(m, i + 1));
   const note = parseNote(train.note);
 
@@ -306,7 +316,9 @@ export function movementHistory(
     }
   }
 
-  rows.sort((a, b) => (a.date === b.date ? a.movementIndex - b.movementIndex : a.date < b.date ? -1 : 1));
+  rows.sort((a, b) =>
+    a.date === b.date ? a.movementIndex - b.movementIndex : a.date < b.date ? -1 : 1,
+  );
   return rows;
 }
 
@@ -325,7 +337,12 @@ export interface TrainingStats {
   /** Sessions grouped by weekday (1 = Monday ... 7 = Sunday). */
   byWeekday: Record<string, number>;
   /** Most-trained movements by completed sets, descending. */
-  topMovements: Array<{ name: string; occurrences: number; completedSets: number; totalVolumeKg: number }>;
+  topMovements: Array<{
+    name: string;
+    occurrences: number;
+    completedSets: number;
+    totalVolumeKg: number;
+  }>;
   /** Titles seen, for quick shape recognition. */
   titles: string[];
 }
@@ -350,7 +367,10 @@ export function aggregateStats(
     Sun: 0,
   };
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const movementTotals = new Map<string, { occurrences: number; completedSets: number; totalVolumeKg: number }>();
+  const movementTotals = new Map<
+    string,
+    { occurrences: number; completedSets: number; totalVolumeKg: number }
+  >();
   const titles = new Set<string>();
 
   for (const day of days) {

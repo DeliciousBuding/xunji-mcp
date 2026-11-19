@@ -4,10 +4,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": [
-      "ES2022",
-      "WebWorker"
-    ],
+    "lib": ["ES2022", "WebWorker"],
     "types": [],
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -24,6 +21,7 @@
     "test/**/*.ts",
     "scripts/**/*.ts",
     "worker-configuration.d.ts",
-    "node_modules/@cloudflare/vitest-pool-workers/types/cloudflare-test.d.ts"
+    "node_modules/@cloudflare/vitest-pool-workers/types/cloudflare-test.d.ts",
+    "test/raw.d.ts"
   ]
 }

@@ -57,7 +57,12 @@ at an HTTPS origin so that a hosted MCP client can reach it.
 
 ## Residual risks
 
-- Passphrase mode can be phished or reused; Access mode is recommended.
+- Passphrase mode can be phished or reused. Access mode is recommended, and
+  `OWNER_PASSPHRASE` should be removed once Access works: it is a second key
+  that is valid from any hostname that reaches the Worker.
+- A `workers.dev` route bypasses host-scoped Access policies. Disable it, or
+  the `/authorize` page is reachable without the Access gate (the passphrase
+  fallback then becomes the only protection).
 - A host compromise exposes the Worker secret. Rotate the Xunji key from the
   Xunji app if that is suspected.
 - The D1 index holds a derived copy of the operator's full history until the

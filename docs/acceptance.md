@@ -37,6 +37,8 @@ requires an operator action; **N/A** out of scope.
 | A29 | Coverage never silently reported as zero                        | Integration tests for pending/error/partial; `xunji_history` separates empty/unscanned/error                                                                 | PASS               |
 | A30 | Warmups, bodyweight, unilateral, duration anomalies handled     | Integration tests: warmups excluded, 0 kg bodyweight sets, unilateral not doubled, anomalies flagged                                                         | PASS               |
 | A31 | Real ChatGPT call through a v0.2 query tool                     | New plugin (v2) + OAuth on 2026-11-19; `xunji_training_overview all_time` returned 170 sessions / 2,348 sets / 497,317.6 kg / 444 days / earliest 2025-09-09 | PASS               |
+| A32 | `workers.dev` route does not bypass the Access gate             | Production `workers.dev/healthz` returns 404; Access still fronts `/authorize` with a 302                                                                    | PASS               |
+| A33 | No passphrase fallback once Access is working                   | `wrangler secret list` has no `OWNER_PASSPHRASE`; `/healthz` still reports `identityMode: cf-access`; `/authorize` only accepts an Access identity           | PASS               |
 
 ## Definition of done for a release
 

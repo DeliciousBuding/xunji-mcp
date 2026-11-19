@@ -24,16 +24,21 @@ Before exposing an instance publicly:
 4. Keep the Xunji key in a Worker secret. Rotate it if it was ever pasted into a
    chat, a ticket, a shell argument or a log.
 5. Review deployed `/healthz` output: it must not reveal keys or data.
+6. Disable the `workers.dev` route. Access policies are host-scoped, so the
+   default address bypasses the `/authorize` gate.
+7. Remove `OWNER_PASSPHRASE` after Access works. Keep it in a password manager
+   only as a break-glass fallback; it is a second key that works on every entry
+   point that reaches the Worker.
 
 ## Secrets that must never be committed
 
-| Secret                              | Storage                                |
-| ----------------------------------- | -------------------------------------- |
-| `XUNJI_API_KEY`                     | `wrangler secret put XUNJI_API_KEY`    |
-| `OWNER_PASSPHRASE`                  | `wrangler secret put OWNER_PASSPHRASE` |
-| `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` | Worker secret or private vars          |
-| `ADMIN_TOKEN` (optional `/admin/*`) | Worker secret                          |
-| Cloudflare API token                | local environment only                 |
+| Secret                              | Storage                                                   |
+| ----------------------------------- | --------------------------------------------------------- |
+| `XUNJI_API_KEY`                     | `wrangler secret put XUNJI_API_KEY`                       |
+| `OWNER_PASSPHRASE`                  | `wrangler secret put OWNER_PASSPHRASE` (break-glass only) |
+| `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` | Worker secret or private vars                             |
+| `ADMIN_TOKEN` (optional `/admin/*`) | Worker secret                                             |
+| Cloudflare API token                | local environment only                                    |
 
 `.gitignore` excludes `wrangler.jsonc`, `.dev.vars`, `.env*` and `.local/`.
 A CI secret scan runs on every push.

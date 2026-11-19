@@ -13,7 +13,9 @@ the operator actually does.
 1. A deployed Worker on an HTTPS origin (see [deployment.md](deployment.md)).
 2. ChatGPT custom connectors available in your plan and workspace.
 3. The origin reachable from your browser and from OpenAI's backend.
-4. `/authorize` protected by Access or configured with `OWNER_PASSPHRASE`.
+4. `/authorize` protected by Access, or configured with `OWNER_PASSPHRASE`.
+   Prefer Access. If Access is configured, remove the passphrase so it cannot
+   act as a second key (see [deployment.md](deployment.md#harden-the-operator-gate)).
 
 ## 1. Add the connector
 
@@ -69,6 +71,41 @@ Confirm the returned title/volume match the Xunji app. Then try
 | `deferred` results                                               | The vendor is pacing reads; wait `retryAfterSeconds` and retry                                    |
 | Writes unavailable                                               | Expected: `WRITE_TOOLS_ENABLED=false` by default                                                  |
 | New tools missing after a bridge upgrade                         | The connector snapshots its tool list at creation; remove and re-add it, then approve OAuth again |
+
+## Re-authenticating
+
+Removing `OWNER_PASSPHRASE` does not disconnect an existing connector: ChatGPT
+keeps using its refresh token until you revoke the connector or the grant. You
+only need the browser flow again when you add a connector, re-add one after
+removing it, or revoke and reconnect.
+
+1. In ChatGPT, open the connector and choose **Reconnect** (or remove and add it
+   again with the same `/mcp` URL).
+2. The browser opens `/authorize`. Cloudflare Access asks you to sign in with
+   the identity provider configured on the Access application (email one-time
+   code, or your SSO).
+3. Approve the consent page. ChatGPT receives a new code and exchanges it for a
+   fresh access/refresh token.
+
+There is no separate bridge password to remember: the operator identity is the
+Access login. If the Access session is still valid, step 2 may be skipped.
+
+### If Access itself is broken
+
+Recovery is deliberately manual and temporary:
+
+```bash
+# 1. Put a new high-entropy passphrase back
+printf '%s' "$NEW_PASSPHRASE" | npx wrangler secret put OWNER_PASSPHRASE
+
+# 2. Complete the consent flow with that passphrase
+# 3. Fix the Access application (policy, AUD, team domain), verify /authorize
+#    redirects to the Access login again, then remove the fallback
+npx wrangler secret delete OWNER_PASSPHRASE
+```
+
+Do not leave the fallback in place "just in case"; that is the state this
+section exists to avoid. The passphrase is only a break-glass path.
 
 ## Revoking access
 

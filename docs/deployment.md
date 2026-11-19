@@ -96,6 +96,35 @@ The Worker independently verifies the Access JWT signature, issuer, audience,
 expiry and email allowlist. A path left unprotected therefore fails closed with
 403 rather than granting access.
 
+### Harden the operator gate
+
+Two settings are easy to miss and both widen the gate:
+
+**Disable the `workers.dev` route.** Access policies are attached to a hostname.
+The default `https://<worker>.<account>.workers.dev` address bypasses the Access
+application even when the custom domain is protected. Disable it in
+**Workers & Pages → the Worker → Settings → Domains & Routes**, or set
+`"workers_dev": false` in `wrangler.jsonc` and redeploy. Verify:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://<worker>.<account>.workers.dev/healthz
+# expected: 404 (or no route)
+```
+
+**Do not keep `OWNER_PASSPHRASE` when Access is configured.** It is a second
+key that works from any entry point that reaches the Worker. With Access in
+place, delete it:
+
+```bash
+npx wrangler secret delete OWNER_PASSPHRASE
+```
+
+Keep a copy in your password manager first: it is the documented emergency
+fallback if Access itself breaks (see
+[chatgpt-connect.md](chatgpt-connect.md#re-authenticating)). After deletion,
+`/authorize` accepts only an Access identity; a direct request without an
+Access JWT gets 403.
+
 ## 7. Deploy
 
 ```bash

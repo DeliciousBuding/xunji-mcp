@@ -19,6 +19,7 @@ import {
   normalizeTrain,
   summarizeDay,
 } from '../domain/normalize';
+import { addDays, todayInXunjiZone } from '../domain/date';
 import { readRange, readDay, enumerateDates } from '../service/day-read';
 import {
   readMovementCatalog,
@@ -45,8 +46,8 @@ const isoDate = z
   .regex(DATE_PATTERN, 'Use YYYY-MM-DD')
   .describe('Calendar date in the user\'s Xunji timezone, e.g. 2026-11-18.');
 
-function todayUtc(now = new Date()): string {
-  return now.toISOString().slice(0, 10);
+function today(now = new Date()): string {
+  return todayInXunjiZone(now);
 }
 
 function daysBetween(from: string, to: string): number {
@@ -597,10 +598,9 @@ export function buildServer(ctx: ToolContext): McpServer {
       },
     },
     async ({ planRef, from, to, includeMovements }) => {
-      const end = to ?? todayUtc();
-      const start =
-        from ??
-        new Date(Date.parse(`${end}T00:00:00Z`) - 7 * 86_400_000).toISOString().slice(0, 10);
+      const anchor = today();
+      const start = from ?? addDays(anchor, -7);
+      const end = to ?? addDays(anchor, 30);
       const span = daysBetween(start, end);
       if (span === 0 || span > 92) {
         return jsonResult(

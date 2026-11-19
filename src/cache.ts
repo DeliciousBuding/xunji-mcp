@@ -6,13 +6,14 @@
  * The cache stores already-normalized payloads, never raw upstream bodies.
  */
 
+import { todayInXunjiZone } from './domain/date';
 import type { Env, ToolResultMeta, XunjiLimits, XunjiTrainResponse } from './types';
 
 const CACHE_VERSION = 'v1';
 
 /** Freshness policy. Completed days are stable; today is still being written. */
 export function cacheTtlSeconds(datestr: string, now = new Date()): number {
-  const today = now.toISOString().slice(0, 10);
+  const today = todayInXunjiZone(now);
   if (datestr < today) return 6 * 60 * 60;
   if (datestr === today) return 60;
   return 15 * 60;

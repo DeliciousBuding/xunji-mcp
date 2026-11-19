@@ -6,6 +6,9 @@
  *   node scripts/secret-scan.mjs            # working tree
  *   node scripts/secret-scan.mjs --history  # every blob reachable from refs
  *
+ * Set PRIVATE_DOMAIN to also flag this deployment's hostname, e.g.
+ *   PRIVATE_DOMAIN=example.net node scripts/secret-scan.mjs --history
+ *
  * Exits 1 when a pattern matches. Matches are redacted in output.
  */
 
@@ -43,10 +46,17 @@ const PATTERNS = [
   { name: 'aws access key', re: /\bAKIA[0-9A-Z]{16}\b/g },
   { name: 'slack token', re: /\bxox[baprs]-[A-Za-z0-9-]{10,}/g },
   { name: 'openai key', re: /\bsk-[A-Za-z0-9]{20,}/g },
-  {
-    name: 'private deployment domain',
-    re: new RegExp('\\b[A-Za-z0-9-]+\\.' + 'delicious233' + '\\.com\\b', 'gi'),
-  },
+  ...(process.env.PRIVATE_DOMAIN?.trim()
+    ? [
+        {
+          name: 'private deployment domain',
+          re: new RegExp(
+            `\\b[A-Za-z0-9-]+\\.${process.env.PRIVATE_DOMAIN.trim().replace(/\./g, '\\.')}\\b`,
+            'gi',
+          ),
+        },
+      ]
+    : []),
   {
     name: 'personal email',
     re: /\b[A-Za-z0-9._%+-]+@(?!example\.(?:com|org|net)\b)[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,

@@ -22,7 +22,11 @@ cp wrangler.example.jsonc wrangler.jsonc
 npx wrangler types
 npm run typecheck
 npm test
+node scripts/secret-scan.mjs --history
 ```
+
+Set `PRIVATE_DOMAIN` (for example `PRIVATE_DOMAIN=example.net`) to also flag
+your own deployment hostname; the scanner never hardcodes one.
 
 Tests run inside workerd through `@cloudflare/vitest-pool-workers`. Upstream
 HTTP is stubbed; no test touches a real Xunji account.
